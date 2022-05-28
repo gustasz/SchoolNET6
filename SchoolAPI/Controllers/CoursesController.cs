@@ -81,5 +81,47 @@ namespace SchoolAPI.Controllers
 
             return NoContent();
         }
+
+        //GET /courses/<course-id>/students
+        [HttpGet("{courseId}/students")]
+        public async Task<IEnumerable<StudentDto>> GetCourseStudentsAsync(int courseId)
+        {
+            var students = (await _repository.GetCourseStudentsAsync(courseId))
+                                    .Select(student => student.AsDto());
+
+            return students;
+        }
+
+        //PUT /courses/<course-id>/students/<student-id>
+        [HttpPut("{courseId}/students/{studentId}")]
+        public async Task<ActionResult<CourseDto>> AddStudentToCourse(int courseId, int studentId)
+        {
+            var course = await _repository.GetCourseAsync(courseId);
+
+            if (course is null)
+            {
+                return NotFound();
+            }
+
+            await _repository.AddStudentToCourse(courseId, studentId);
+
+            return NoContent();
+        }
+
+        //DELETE /courses/<course-id>/students/<student-id>
+        [HttpDelete("{courseId}/students/{studentId}")]
+        public async Task<ActionResult> DeleteStudentFromCourse(int courseId, int studentId)
+        {
+            var existingCourse = await _repository.GetCourseAsync(courseId);
+
+            if (existingCourse is null)
+            {
+                return NotFound();
+            }
+
+            await _repository.DeleteStudentFromCourse(courseId, studentId);
+
+            return NoContent();
+        }
     }
 }

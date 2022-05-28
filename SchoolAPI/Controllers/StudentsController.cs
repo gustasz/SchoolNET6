@@ -59,7 +59,7 @@ namespace SchoolAPI.Controllers
         {
             var existingStudent = await _repository.GetStudentAsync(id);
 
-            if(existingStudent is null)
+            if (existingStudent is null)
             {
                 return NotFound();
             }
@@ -79,12 +79,53 @@ namespace SchoolAPI.Controllers
         {
             var existingStudent = await _repository.GetStudentAsync(id);
 
-            if(existingStudent is null)
+            if (existingStudent is null)
             {
                 return NotFound();
             }
 
             await _repository.DeleteStudentAsync(id);
+
+            return NoContent();
+        }
+
+        //GET /students/<student-id>/courses
+        [HttpGet("{studentId}/courses")]
+        public async Task<IEnumerable<CourseDto>> GetStudentCoursesAsync(int studentId)
+        {
+            var courses = (await _repository.GetStudentCoursesAsync(studentId))
+                            .Select(course => course.AsDto());
+            return courses;
+        }
+
+        //PUT /students/<student-id>/courses/<course-id>
+        [HttpPut("{studentId}/courses/{courseId}")]
+        public async Task<ActionResult<StudentDto>> AddCourseToStudentAsync(int studentId, int courseId)
+        {
+            var student = await _repository.GetStudentAsync(studentId);
+
+            if (student is null)
+            {
+                return NotFound();
+            }
+
+            await _repository.AddCourseToStudent(studentId, courseId);
+
+            return NoContent();
+        }
+
+        //DELETE /students/<student-id>/courses/<course-id>
+        [HttpDelete("{studentId}/courses/{courseId}")]
+        public async Task<ActionResult> DeleteStudentFromCourse(int studentId, int courseId)
+        {
+            var existingStudent = await _repository.GetStudentAsync(studentId);
+
+            if (existingStudent is null)
+            {
+                return NotFound();
+            }
+
+            await _repository.DeleteCourseFromStudent(studentId,courseId);
 
             return NoContent();
         }
