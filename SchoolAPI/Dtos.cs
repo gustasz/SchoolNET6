@@ -14,4 +14,8 @@ namespace SchoolAPI
     public record SubjectDto(int Id, string Name);
     public record CreateSubjectDto(string Name);
     public record UpdateSubjectDto(string Name);
+    public record LessonDto(int Id, int courseId, DateTime time);
+    public record CreateLessonDto(int courseId, DateTime day, int lessonOfTheDay);
+    public record UpdateLessonDto(int courseId, DateTime day, int lessonOfTheDay);
+    public record CreateLessonShortDto(DateTime day, int lessonOfTheDay);
 }

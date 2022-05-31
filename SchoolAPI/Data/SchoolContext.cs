@@ -14,6 +14,7 @@ namespace SchoolAPI.Data
         public DbSet<Teacher> Teachers { get; set; }
         public DbSet<Course> Courses { get; set; }
         public DbSet<Subject> Subjects { get; set; }
+        public DbSet<Lesson> Lessons { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) // make table names singular
         {
@@ -21,6 +22,7 @@ namespace SchoolAPI.Data
             modelBuilder.Entity<Teacher>().ToTable("Teacher");
             modelBuilder.Entity<Course>().ToTable("Course");
             modelBuilder.Entity<Subject>().ToTable("Subject");
+            modelBuilder.Entity<Lesson>().ToTable("Lesson");
         }
 
     }
