@@ -123,5 +123,21 @@ namespace SchoolAPI.Controllers
 
             return NoContent();
         }
+
+        //PUT /courses/coursetimes
+        [HttpPut("coursetimes")]
+        public async Task<ActionResult<CourseDto>> AddCourseTimeToCourse(int courseId, int studentId)
+        {
+            var course = await _repository.GetCourseAsync(courseId);
+
+            if (course is null)
+            {
+                return NotFound();
+            }
+
+            await _repository.AddStudentToCourse(courseId, studentId);
+
+            return NoContent();
+        }
     }
 }

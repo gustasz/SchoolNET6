@@ -50,7 +50,7 @@ namespace SchoolAPI.Controllers
             };
 
             await _repository.AddStudentAsync(student);
-            return Ok();
+            return Ok(student);
             //return CreatedAtAction(nameof(GetStudentAsync), new { id = student.Id }, student.AsDto());
         }
 

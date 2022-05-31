@@ -23,5 +23,10 @@ namespace SchoolAPI
         {
             return new SubjectDto(subject.Id, subject.Name);
         }
+
+        public static LessonDto AsDto(this Lesson lesson)
+        {
+            return new LessonDto(lesson.Id, lesson.Course.Id, lesson.Time);
+        }
     }
 }

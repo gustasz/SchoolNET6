@@ -12,12 +12,12 @@ namespace SchoolAPI.Data
         }
         public async Task<IEnumerable<Student>> GetStudentsAsync()
         {
-            return await _context.Students.ToListAsync();
+            return await _context.Students.AsNoTracking().ToListAsync();
         }
 
         public async Task<Student> GetStudentAsync(int studentId)
         {
-            return await _context.Students.FirstOrDefaultAsync(s => s.Id == studentId);
+            return await _context.Students.AsNoTracking().FirstOrDefaultAsync(s => s.Id == studentId);
         }
 
         public async Task<Student> AddStudentAsync(Student student)
