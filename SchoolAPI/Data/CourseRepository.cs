@@ -32,6 +32,11 @@ namespace SchoolAPI.Data
             {
                 return null;
             }
+            var currentCourses = await GetCoursesAsync();
+            if (currentCourses.Any((c => c.Subject.Id == course.Subject.Id && c.Teacher.Id == course.Teacher.Id)))
+            {
+                return null; // exact course already exists
+            }
 
             course.Subject = subject;
             course.Teacher = teacher;
@@ -67,11 +72,8 @@ namespace SchoolAPI.Data
         public async Task DeleteCourseAsync(int courseId)
         {
             var result = await _context.Courses.FirstOrDefaultAsync(c => c.Id == courseId);
-            if (result is not null)
-            {
-                _context.Courses.Remove(result);
-                await _context.SaveChangesAsync();
-            }
+            _context.Courses.Remove(result);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<IEnumerable<Student>> GetCourseStudentsAsync(int courseId)

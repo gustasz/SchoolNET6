@@ -28,5 +28,15 @@ namespace SchoolAPI
         {
             return new LessonDto(lesson.Id, lesson.Course.Id, lesson.Time);
         }
+
+        public static List<LessonDto> AsDtos(this List<Lesson> lessons)
+        {
+            var lessonsDto = new List<LessonDto>();
+            foreach(var lesson in lessons)
+            {
+                lessonsDto.Add(lesson.AsDto());
+            }
+            return lessonsDto;
+        }
     }
 }

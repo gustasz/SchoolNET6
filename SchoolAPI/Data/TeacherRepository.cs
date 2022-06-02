@@ -22,6 +22,7 @@ namespace SchoolAPI.Data
 
         public async Task<Teacher> AddTeacherAsync(Teacher teacher)
         {
+            teacher.BirthDate = new DateTime(teacher.BirthDate.Year,teacher.BirthDate.Month,teacher.BirthDate.Day);
             var result = await _context.Teachers.AddAsync(teacher);
             await _context.SaveChangesAsync();
             return result.Entity;
@@ -31,28 +32,20 @@ namespace SchoolAPI.Data
         {
             var result = await _context.Teachers.FirstOrDefaultAsync(t => t.Id == teacher.Id);
 
-            if (result is not null)
-            {
-                result.FirstName = teacher.FirstName;
-                result.LastName = teacher.LastName;
-                result.BirthDate = teacher.BirthDate;
+            result.FirstName = teacher.FirstName;
+            result.LastName = teacher.LastName;
+            result.BirthDate = teacher.BirthDate;
 
-                await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
-                return result;
-            }
-
-            return null;
+            return result;
         }
 
         public async Task DeleteTeacherAsync(int teacherId)
         {
             var result = await _context.Teachers.FirstOrDefaultAsync(t => t.Id == teacherId);
-            if (result is not null)
-            {
-                _context.Teachers.Remove(result);
-                await _context.SaveChangesAsync();
-            }
+            _context.Teachers.Remove(result);
+            await _context.SaveChangesAsync();
         }
     }
 }

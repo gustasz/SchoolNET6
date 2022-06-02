@@ -37,16 +37,16 @@ namespace SchoolAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<SubjectDto>> CreateCourseAsync(CreateSubjectDto subjectDto)
+        public async Task<ActionResult<SubjectDto>> CreateSubjectAsync(CreateSubjectDto subjectDto)
         {
             Subject subject = new()
             {
                 Name = subjectDto.Name
             };
 
-            await _repository.AddSubjectAsync(subject);
-            return Ok();
-            //return CreatedAtAction(nameof(GetStudentAsync), new { id = student.Id }, student.AsDto());
+            var item = await _repository.AddSubjectAsync(subject);
+
+            return CreatedAtAction("GetSubject", new { id = item.Id }, item.AsDto());
         }
 
         [HttpPut("{id}")]

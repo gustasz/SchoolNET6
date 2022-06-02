@@ -49,9 +49,11 @@ namespace SchoolAPI.Controllers
                 Grade = studentDto.Grade
             };
 
-            await _repository.AddStudentAsync(student);
-            return Ok(student);
-            //return CreatedAtAction(nameof(GetStudentAsync), new { id = student.Id }, student.AsDto());
+            student.BirthDate = new DateTime(student.BirthDate.Year, student.BirthDate.Month, student.BirthDate.Day);
+
+            var result = await _repository.AddStudentAsync(student);
+
+            return CreatedAtAction("GetStudent", new { id = result.Id }, result.AsDto());
         }
 
         [HttpPut("{id}")]
