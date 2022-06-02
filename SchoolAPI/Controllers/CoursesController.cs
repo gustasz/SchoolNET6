@@ -41,12 +41,17 @@ namespace SchoolAPI.Controllers
         {
             Course course = new();
 
-            course.Subject = new() { Id = courseDto.subjectId };
-            course.Teacher = new() { Id = courseDto.teacherId };
+            course.Subject = new() { Id = courseDto.SubjectId };
+            course.Teacher = new() { Id = courseDto.TeacherId };
 
-            await _repository.AddCourseAsync(course);
-            return Ok();
-            //return CreatedAtAction(nameof(GetStudentAsync), new { id = student.Id }, student.AsDto());
+            var result = await _repository.AddCourseAsync(course);
+
+            if (result is null)
+            {
+                return BadRequest();
+            }
+
+            return CreatedAtAction("GetCourse", new { id = result.Id }, result.AsDto());
         }
 
         [HttpPut("{id}")]
@@ -59,8 +64,8 @@ namespace SchoolAPI.Controllers
                 return NotFound();
             }
 
-            existingCourse.Subject = new() { Id = courseDto.subjectId };
-            existingCourse.Teacher = new() { Id = courseDto.teacherId };
+            existingCourse.Subject = new() { Id = courseDto.SubjectId };
+            existingCourse.Teacher = new() { Id = courseDto.TeacherId };
 
             await _repository.UpdateCourseAsync(existingCourse);
 
@@ -97,10 +102,15 @@ namespace SchoolAPI.Controllers
         public async Task<ActionResult<CourseDto>> AddStudentToCourse(int courseId, int studentId)
         {
             var course = await _repository.GetCourseAsync(courseId);
-
             if (course is null)
             {
                 return NotFound();
+            }
+
+            var courseStudents = await _repository.GetCourseStudentsAsync(courseId);
+            if (courseStudents.Any(s => s.Id == studentId))
+            {
+                return BadRequest();
             }
 
             await _repository.AddStudentToCourse(courseId, studentId);
@@ -113,8 +123,13 @@ namespace SchoolAPI.Controllers
         public async Task<ActionResult> DeleteStudentFromCourse(int courseId, int studentId)
         {
             var existingCourse = await _repository.GetCourseAsync(courseId);
-
             if (existingCourse is null)
+            {
+                return NotFound();
+            }
+
+            var courseStudents = await _repository.GetCourseStudentsAsync(courseId);
+            if (!courseStudents.Any(s => s.Id == studentId))
             {
                 return NotFound();
             }

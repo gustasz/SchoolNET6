@@ -46,11 +46,8 @@ namespace SchoolAPI.Data
         public async Task DeleteSubjectAsync(int subjectId)
         {
             var result = await _context.Subjects.FirstOrDefaultAsync(s => s.Id == subjectId);
-            if (result is not null)
-            {
-                _context.Subjects.Remove(result);
-                await _context.SaveChangesAsync();
-            }
+            _context.Subjects.Remove(result);
+            await _context.SaveChangesAsync();
         }
     }
 }

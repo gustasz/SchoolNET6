@@ -49,11 +49,8 @@ namespace SchoolAPI.Data
         public async Task DeleteStudentAsync(int studentId)
         {
             var result = await _context.Students.FirstOrDefaultAsync(s => s.Id == studentId);
-            if (result is not null)
-            {
-                _context.Students.Remove(result);
-                await _context.SaveChangesAsync();
-            }
+            _context.Students.Remove(result);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<IEnumerable<Course>> GetStudentCoursesAsync(int studentId)

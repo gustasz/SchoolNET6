@@ -38,23 +38,33 @@ namespace SchoolAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<LessonDto>> AddLessonsAsync(CreateLessonShortDto[] lessonsDto,int courseId)
+        public async Task<ActionResult<LessonDto>> AddLessonsAsync(CreateLessonShortDto[] lessonsDto, int courseId)
         {
             Lesson[] lessons = new Lesson[lessonsDto.Length];
 
-                for(int i = 0; i < lessonsDto.Length; i++)
+            for (int i = 0; i < lessonsDto.Length; i++)
             {
-                TimeOnly lessonTime = LessonTimes[lessonsDto[i].lessonOfTheDay - 1];
+                TimeOnly lessonTime = LessonTimes[lessonsDto[i].LessonOfTheDay - 1];
 
                 Lesson lesson = new();
                 lesson.Course = new() { Id = courseId };
-                lesson.Time = new DateTime(lessonsDto[i].day.Year, lessonsDto[i].day.Month, lessonsDto[i].day.Day, lessonTime.Hour, lessonTime.Minute, 0);
+                lesson.Time = new DateTime(lessonsDto[i].DayDate.Year, lessonsDto[i].DayDate.Month, lessonsDto[i].DayDate.Day, lessonTime.Hour, lessonTime.Minute, 0);
                 lessons[i] = lesson;
             }
 
-            await _repository.CreateLessonsForCourseAsync(lessons);
-            return Ok();
-            //return CreatedAtAction(nameof(GetStudentAsync), new { id = student.Id }, student.AsDto());
+            var currentLessons = await _repository.GetCourseLessonsAsync(courseId);
+
+            var newLessonTimes = lessons.Select(l => l.Time);
+            var currentLessonTimes = currentLessons.Select(l => l.Time);
+
+            if(currentLessonTimes.Any(l => newLessonTimes.Contains(l)))
+            {
+                return BadRequest();
+            }
+
+            var result = await _repository.CreateLessonsForCourseAsync(lessons);
+
+            return CreatedAtAction("GetLessons", null, result.ToList().AsDtos());
         }
 
         [HttpPut("{id}")]
@@ -62,15 +72,15 @@ namespace SchoolAPI.Controllers
         {
             var existingLesson = await _repository.GetLessonAsync(id);
 
-            if(existingLesson is null)
+            if (existingLesson is null)
             {
                 return NotFound();
             }
 
-            TimeOnly lessonTime = LessonTimes[lessonDto.lessonOfTheDay - 1];
+            TimeOnly lessonTime = LessonTimes[lessonDto.LessonOfTheDay - 1];
 
-            existingLesson.Course = new() { Id = lessonDto.courseId};
-            existingLesson.Time = new DateTime(lessonDto.day.Year, lessonDto.day.Month, lessonDto.day.Day, lessonTime.Hour, lessonTime.Minute, 0);
+            existingLesson.Course = new() { Id = lessonDto.CourseId };
+            existingLesson.Time = new DateTime(lessonDto.DayDate.Year, lessonDto.DayDate.Month, lessonDto.DayDate.Day, lessonTime.Hour, lessonTime.Minute, 0);
 
             await _repository.UpdateLessonAsync(existingLesson);
 
@@ -96,6 +106,14 @@ namespace SchoolAPI.Controllers
         public async Task<IEnumerable<LessonDto>> GetCourseLessonsAsync(int courseId)
         {
             var lessons = (await _repository.GetCourseLessonsAsync(courseId))
+                .Select(lesson => lesson.AsDto());
+            return lessons;
+        }
+
+        [HttpGet("/student/{studentId}")]
+        public async Task<IEnumerable<LessonDto>> GetStudentLessonsAsync(int studentId)
+        {
+            var lessons = (await _repository.GetStudentLessonsAsync(studentId))
                 .Select(lesson => lesson.AsDto());
             return lessons;
         }
