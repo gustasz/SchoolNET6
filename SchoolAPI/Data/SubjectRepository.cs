@@ -31,16 +31,11 @@ namespace SchoolAPI.Data
         {
             var result = await _context.Subjects.FirstOrDefaultAsync(s => s.Id == subject.Id);
 
-            if (result is not null)
-            {
-                result.Name = subject.Name;
+            result.Name = subject.Name;
 
-                await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
+            return result;
 
-                return result;
-            }
-
-            return null;
         }
 
         public async Task DeleteSubjectAsync(int subjectId)

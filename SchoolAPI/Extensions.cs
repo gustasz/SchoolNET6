@@ -16,7 +16,7 @@ namespace SchoolAPI
 
         public static CourseDto AsDto(this Course course)
         {
-            return new CourseDto(course.Id, course.Subject.Name, course.Teacher.FirstName + " " + course.Teacher.LastName);
+            return new CourseDto(course.Id, course.Subject.Id, course.Subject.Name, course.Teacher.Id, course.Teacher.FirstName + " " + course.Teacher.LastName);
         }
 
         public static SubjectDto AsDto(this Subject subject)

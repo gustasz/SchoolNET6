@@ -10,7 +10,7 @@ namespace SchoolAPI.Data
         Task<Course> UpdateCourseAsync(Course course);
         Task DeleteCourseAsync(int courseId);
         Task<IEnumerable<Student>> GetCourseStudentsAsync(int courseId);
-        Task<Course> AddStudentToCourse(int courseId, int studentId);
-        Task DeleteStudentFromCourse(int courseId, int studentId);
+        Task<Course> AddStudentToCourseAsync(int courseId, int studentId);
+        Task DeleteStudentFromCourseAsync(int courseId, int studentId);
     }
 }

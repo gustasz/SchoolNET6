@@ -9,11 +9,13 @@ namespace SchoolAPI.Controllers
     public class LessonsController : ControllerBase
     {
         private readonly ILessonRepository _repository;
+        private readonly ICourseRepository _courseRepository;
         public static readonly TimeOnly[] LessonTimes = { // All lessons in school can only start on 8 different times, 1st lesson starts at [0]. For example, 5th lesson of the day can only start at 12:00
             new TimeOnly(8,0), new TimeOnly(8,55),new TimeOnly(9,50),new TimeOnly(10,55),new TimeOnly(12,0),new TimeOnly(12,55),new TimeOnly(13,50),new TimeOnly(14,45)};
-        public LessonsController(ILessonRepository repository)
+        public LessonsController(ILessonRepository repository, ICourseRepository courseRepository)
         {
             _repository = repository;
+            _courseRepository = courseRepository;
         }
 
         [HttpGet]
@@ -40,6 +42,13 @@ namespace SchoolAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<LessonDto>> AddLessonsAsync(CreateLessonShortDto[] lessonsDto, int courseId)
         {
+            var course = await _courseRepository.GetCourseAsync(courseId);
+            if(course is null)
+            {
+                return NotFound();
+            }
+
+
             Lesson[] lessons = new Lesson[lessonsDto.Length];
 
             for (int i = 0; i < lessonsDto.Length; i++)
@@ -47,7 +56,7 @@ namespace SchoolAPI.Controllers
                 TimeOnly lessonTime = LessonTimes[lessonsDto[i].LessonOfTheDay - 1];
 
                 Lesson lesson = new();
-                lesson.Course = new() { Id = courseId };
+                lesson.Course = course;
                 lesson.Time = new DateTime(lessonsDto[i].DayDate.Year, lessonsDto[i].DayDate.Month, lessonsDto[i].DayDate.Day, lessonTime.Hour, lessonTime.Minute, 0);
                 lessons[i] = lesson;
             }

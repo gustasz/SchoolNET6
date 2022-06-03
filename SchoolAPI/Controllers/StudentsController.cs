@@ -10,9 +10,11 @@ namespace SchoolAPI.Controllers
     public class StudentsController : ControllerBase
     {
         private readonly IStudentRepository _repository;
-        public StudentsController(IStudentRepository repository)
+        private readonly ICourseRepository _courseRepository;
+        public StudentsController(IStudentRepository repository, ICourseRepository courseRepository)
         {
             _repository = repository;
+            _courseRepository = courseRepository;
         }
 
         [HttpGet]
@@ -93,11 +95,17 @@ namespace SchoolAPI.Controllers
 
         //GET /students/<student-id>/courses
         [HttpGet("{studentId}/courses")]
-        public async Task<IEnumerable<CourseDto>> GetStudentCoursesAsync(int studentId)
+        public async Task<ActionResult<IEnumerable<CourseDto>>> GetStudentCoursesAsync(int studentId)
         {
+            var student = await _repository.GetStudentAsync(studentId);
+            if (student is null)
+            {
+                return NotFound();
+            }
+
             var courses = (await _repository.GetStudentCoursesAsync(studentId))
                             .Select(course => course.AsDto());
-            return courses;
+            return Ok(courses);
         }
 
         //PUT /students/<student-id>/courses/<course-id>
@@ -105,13 +113,18 @@ namespace SchoolAPI.Controllers
         public async Task<ActionResult<StudentDto>> AddCourseToStudentAsync(int studentId, int courseId)
         {
             var student = await _repository.GetStudentAsync(studentId);
-
             if (student is null)
             {
                 return NotFound();
             }
 
-            await _repository.AddCourseToStudent(studentId, courseId);
+            var course = await _courseRepository.GetCourseAsync(courseId);
+            if (course is null)
+            {
+                return NotFound();
+            }
+
+            await _repository.AddCourseToStudentAsync(studentId, courseId);
 
             return NoContent();
         }
@@ -120,14 +133,24 @@ namespace SchoolAPI.Controllers
         [HttpDelete("{studentId}/courses/{courseId}")]
         public async Task<ActionResult> DeleteStudentFromCourse(int studentId, int courseId)
         {
-            var existingStudent = await _repository.GetStudentAsync(studentId);
-
-            if (existingStudent is null)
+            var student = await _repository.GetStudentAsync(studentId);
+            if (student is null)
             {
                 return NotFound();
             }
 
-            await _repository.DeleteCourseFromStudent(studentId,courseId);
+            var course = await _courseRepository.GetCourseAsync(courseId);
+            if (course is null)
+            {
+                return NotFound();
+            }
+
+            if(!student.Courses.Contains(course))
+            {
+                return NotFound();
+            }
+
+            await _repository.DeleteCourseFromStudentAsync(studentId,courseId);
 
             return NoContent();
         }
