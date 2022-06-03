@@ -8,7 +8,7 @@ namespace SchoolAPI
     public record TeacherDto(int Id, string FirstName, string LastName, DateTime BirthDate);
     public record CreateTeacherDto(string FirstName, string LastName, DateTime BirthDate);
     public record UpdateTeacherDto(string FirstName, string LastName, DateTime BirthDate);
-    public record CourseDto(int Id, string SubjectName, string TeacherName);
+    public record CourseDto(int Id, int SubjectId, string SubjectName, int TeacherId, string TeacherName);
     public record CreateCourseDto(int SubjectId, int TeacherId);
     public record UpdateCourseDto(int SubjectId, int TeacherId);
     public record SubjectDto(int Id, string Name);

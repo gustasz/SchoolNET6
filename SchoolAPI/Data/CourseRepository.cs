@@ -22,25 +22,6 @@ namespace SchoolAPI.Data
 
         public async Task<Course> AddCourseAsync(Course course)
         {
-            var subject = await _context.Subjects.FirstOrDefaultAsync(s => s.Id == course.Subject.Id);
-            if (subject == null)
-            {
-                return null; // TODO
-            }
-            var teacher = await _context.Teachers.FirstOrDefaultAsync(t => t.Id == course.Teacher.Id);
-            if (teacher == null)
-            {
-                return null;
-            }
-            var currentCourses = await GetCoursesAsync();
-            if (currentCourses.Any((c => c.Subject.Id == course.Subject.Id && c.Teacher.Id == course.Teacher.Id)))
-            {
-                return null; // exact course already exists
-            }
-
-            course.Subject = subject;
-            course.Teacher = teacher;
-
             var result = await _context.Courses.AddAsync(course);
             await _context.SaveChangesAsync();
             return result.Entity;
@@ -50,19 +31,8 @@ namespace SchoolAPI.Data
         {
             var result = await _context.Courses.FirstOrDefaultAsync(c => c.Id == course.Id);
 
-            var subject = await _context.Subjects.FirstOrDefaultAsync(s => s.Id == course.Subject.Id);
-            if (subject == null)
-            {
-                return null; // TODO
-            }
-            var teacher = await _context.Teachers.FirstOrDefaultAsync(t => t.Id == course.Teacher.Id);
-            if (teacher == null)
-            {
-                return null;
-            }
-
-            result.Subject = subject;
-            result.Teacher = teacher;
+            result.Subject = course.Subject;
+            result.Teacher = course.Teacher;
 
             await _context.SaveChangesAsync();
 
@@ -80,24 +50,16 @@ namespace SchoolAPI.Data
         {
             var course = await _context.Courses.AsNoTracking().Include(s => s.Students).FirstOrDefaultAsync(c => c.Id == courseId);
 
-            if (course is not null)
-            {
-                var students = course.Students;
-                return students;
-            }
+            var students = course.Students;
+            return students;
 
-            return null; //todo
         }
 
-        public async Task<Course> AddStudentToCourse(int courseId, int studentId)
+        public async Task<Course> AddStudentToCourseAsync(int courseId, int studentId)
         {
             var course = await _context.Courses.FirstOrDefaultAsync(c => c.Id == courseId);
 
             var student = await _context.Students.FirstOrDefaultAsync(s => s.Id == studentId);
-            if (student == null)
-            {
-                return null; // TODO
-            }
 
             if (course.Students is null)
             {
@@ -112,19 +74,14 @@ namespace SchoolAPI.Data
         }
 
         //DELETE /courses/<course-id>/students/<student-id>
-        public async Task DeleteStudentFromCourse(int courseId, int studentId)
+        public async Task DeleteStudentFromCourseAsync(int courseId, int studentId)
         {
             var course = await _context.Courses.Include(c => c.Students).FirstOrDefaultAsync(c => c.Id == courseId);
-            if (course.Students is not null)
-            {
-                var student = course.Students.FirstOrDefault(s => s.Id == studentId);
+            var student = course.Students.FirstOrDefault(s => s.Id == studentId);
 
-                if (student is not null)
-                {
-                    course.Students.Remove(student);
-                    await _context.SaveChangesAsync();
-                }
-            }
+            course.Students.Remove(student);
+            await _context.SaveChangesAsync();
+
         }
     }
 }

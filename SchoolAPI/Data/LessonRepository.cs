@@ -20,7 +20,7 @@ namespace SchoolAPI.Data
             return await _context.Lessons.AsNoTracking().Include(l => l.Course).FirstOrDefaultAsync(l => l.Id == lessonId);
         }
 
-        public async Task<Lesson> AddLessonAsync(Lesson lesson)
+        /*public async Task<Lesson> AddLessonAsync(Lesson lesson)
         {
             //var result = await _context.Lessons.AddAsync(lesson);
             var course = await _context.Courses.Include(c => c.Lessons).FirstOrDefaultAsync(c => c.Id == lesson.Course.Id);
@@ -37,23 +37,19 @@ namespace SchoolAPI.Data
                 return result;
             }
             return null;
-        }
+        }*/
 
         public async Task<Lesson> UpdateLessonAsync(Lesson lesson)
         {
             var result = await _context.Lessons.FirstOrDefaultAsync(l => l.Id == lesson.Id);
 
-            if (result is not null)
-            {
-                result.Time = lesson.Time;
-                result.Course = lesson.Course;
+            result.Time = lesson.Time;
+            result.Course = lesson.Course;
 
-                await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
-                return result;
-            }
+            return result;
 
-            return null;
         }
         public async Task DeleteLessonAsync(int lessonId)
         {
@@ -71,16 +67,10 @@ namespace SchoolAPI.Data
         {
             var course = await _context.Courses.Include(c => c.Lessons).FirstOrDefaultAsync(c => c.Id == lessons[0].Course.Id);
 
-            if (course is null)
-            {
-                return null;
-            }
-
             if (course.Lessons is null)
             {
                 course.Lessons = new List<Lesson>();
             }
-
 
             foreach (var lesson in lessons)
             {
