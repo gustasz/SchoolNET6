@@ -164,9 +164,11 @@ namespace SchoolAPI.Controllers
 
             var studentLessonsTimes = (await _lessonRepository.GetStudentLessonsAsync(studentId)).Select(l => l.Time);
             var courseLessonsTimes = (await _lessonRepository.GetCourseLessonsAsync(courseId)).Select(l => l.Time);
-            if(studentLessonsTimes.Intersect(courseLessonsTimes).Any())
+            var intersectTimes = studentLessonsTimes.Intersect(courseLessonsTimes);
+            if (intersectTimes.Any())
             {
-                return BadRequest("Schedule overlap."); // return students and dates?
+                var overlapS = String.Join(", ", intersectTimes);
+                return BadRequest($"Schedule overlap: {overlapS}");
             }
 
             await _repository.AddStudentToCourseAsync(courseId, studentId);

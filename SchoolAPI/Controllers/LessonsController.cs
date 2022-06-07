@@ -65,9 +65,12 @@ namespace SchoolAPI.Controllers
             var currentLessons = await _repository.GetCourseLessonsAsync(courseId);
             var newLessonTimes = lessons.Select(l => l.Time);
             var currentLessonTimes = currentLessons.Select(l => l.Time);
-            if(currentLessonTimes.Any(l => newLessonTimes.Contains(l)))
+            var lessonOverlap = currentLessonTimes.Where(l => newLessonTimes.Contains(l)).ToList();
+            if(lessonOverlap.Any())
             {
-                return BadRequest("Lesson already exists.");
+                string overlapS = String.Join(", ",lessonOverlap);
+                
+                return BadRequest($"Lesson(s) already exists: {overlapS}");
             }
 
             // check for schedule overlap (there must be an easier way to do this)
@@ -85,9 +88,11 @@ namespace SchoolAPI.Controllers
                 }
             }
 
-            if (allStudentLessonTimes.Intersect(newLessonTimes).Any())
+            var timeOverlap = allStudentLessonTimes.Intersect(newLessonTimes);
+            if (timeOverlap.Any())
             {
-                return BadRequest("Schedule overlap."); // return which course(s) overlap and dates
+                string oLessons = String.Join(", ", timeOverlap);
+                return BadRequest($"Schedule overlap: {oLessons}"); // return course too?
             }
 
             var result = await _repository.CreateLessonsForCourseAsync(lessons);
