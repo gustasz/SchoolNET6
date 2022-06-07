@@ -10,7 +10,8 @@ namespace SchoolAPI.Controllers
     {
         private readonly ILessonRepository _repository;
         private readonly ICourseRepository _courseRepository;
-        public static readonly TimeOnly[] LessonTimes = { // All lessons in school can only start on 8 different times, 1st lesson starts at [0]. For example, 5th lesson of the day can only start at 12:00
+
+        public static readonly TimeOnly[] LessonTimes = { // Lessons can only start at predetermined times by school. For example, 5th lesson of the day can only start at 12:00
             new TimeOnly(8,0), new TimeOnly(8,55),new TimeOnly(9,50),new TimeOnly(10,55),new TimeOnly(12,0),new TimeOnly(12,55),new TimeOnly(13,50),new TimeOnly(14,45)};
         public LessonsController(ILessonRepository repository, ICourseRepository courseRepository)
         {
@@ -62,13 +63,31 @@ namespace SchoolAPI.Controllers
             }
 
             var currentLessons = await _repository.GetCourseLessonsAsync(courseId);
-
             var newLessonTimes = lessons.Select(l => l.Time);
             var currentLessonTimes = currentLessons.Select(l => l.Time);
-
             if(currentLessonTimes.Any(l => newLessonTimes.Contains(l)))
             {
-                return BadRequest();
+                return BadRequest("Lesson already exists.");
+            }
+
+            // check for schedule overlap (there must be an easier way to do this)
+            var courseStudents = await _courseRepository.GetCourseStudentsAsync(courseId);
+            var allStudentLessonTimes = new List<DateTime>();
+            foreach(var student in courseStudents)
+            {
+                var studentLessons = await _repository.GetStudentLessonsAsync(student.Id);
+                foreach(var lesson in studentLessons)
+                {
+                    if(!allStudentLessonTimes.Contains(lesson.Time))
+                    {
+                        allStudentLessonTimes.Add(lesson.Time);
+                    }
+                }
+            }
+
+            if (allStudentLessonTimes.Intersect(newLessonTimes).Any())
+            {
+                return BadRequest("Schedule overlap."); // return which course(s) overlap and dates
             }
 
             var result = await _repository.CreateLessonsForCourseAsync(lessons);
@@ -125,6 +144,14 @@ namespace SchoolAPI.Controllers
             var lessons = (await _repository.GetStudentLessonsAsync(studentId))
                 .Select(lesson => lesson.AsDto());
             return lessons;
+        }
+
+        [HttpGet("/student/{studentId}/day")]
+        public async Task<IEnumerable<LessonDto>> GetStudentLessonsForDayAsync(int studentId, DateTime dayDate)
+        {
+            var lessons = (await _repository.GetStudentLessonsAsync(studentId));
+            var dayLessons = lessons.Where(l => l.Time.Date == dayDate.Date).OrderBy(l => l.Time);
+            return dayLessons.Select(lesson => lesson.AsDto());
         }
 
     }

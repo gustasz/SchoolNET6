@@ -12,12 +12,12 @@ namespace SchoolAPI.Data
         }
         public async Task<IEnumerable<Course>> GetCoursesAsync()
         {
-            return await _context.Courses.AsNoTracking().Include(s => s.Subject).Include(t => t.Teacher).ToListAsync();
+            return await _context.Courses.AsNoTracking().Include(c => c.Subject).Include(c => c.Teacher).Include(c => c.Students).ToListAsync();
         }
 
         public async Task<Course> GetCourseAsync(int courseId)
         {
-            return await _context.Courses.AsNoTracking().Include(s => s.Subject).Include(t => t.Teacher).FirstOrDefaultAsync(c => c.Id == courseId);
+            return await _context.Courses.AsNoTracking().Include(c => c.Subject).Include(c => c.Teacher).FirstOrDefaultAsync(c => c.Id == courseId);
         }
 
         public async Task<Course> AddCourseAsync(Course course)

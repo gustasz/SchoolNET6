@@ -12,15 +12,18 @@ namespace SchoolAPI.Controllers
         private readonly ISubjectRepository _subjectRepository;
         private readonly ITeacherRepository _teacherRepository;
         private readonly IStudentRepository _studentRepository;
+        private readonly ILessonRepository _lessonRepository;
         public CoursesController(ICourseRepository repository,
                                  ISubjectRepository subjectRepository,
                                  ITeacherRepository teacherRepository,
-                                 IStudentRepository studentRepository)
+                                 IStudentRepository studentRepository,
+                                 ILessonRepository lessonRepository)
         {
             _repository = repository;
             _subjectRepository = subjectRepository;
             _teacherRepository = teacherRepository;
             _studentRepository = studentRepository;
+            _lessonRepository = lessonRepository;
         }
 
         [HttpGet]
@@ -51,19 +54,19 @@ namespace SchoolAPI.Controllers
             var subject = await _subjectRepository.GetSubjectAsync(courseDto.SubjectId);
             if (subject is null)
             {
-                return BadRequest();
+                return NotFound("Subject not found.");
             }
 
             var teacher = await _teacherRepository.GetTeacherAsync(courseDto.TeacherId);
             if (teacher is null)
             {
-                return BadRequest();
+                return NotFound("Teacher not found.");
             }
 
             var currentCourses = await GetCoursesAsync();
             if (currentCourses.Any((c => c.SubjectId == courseDto.SubjectId && c.TeacherId == courseDto.TeacherId)))
             {
-                return BadRequest(); // exact course already exists
+                return BadRequest("Course already exists");
             }
 
             Course course = new();
@@ -156,7 +159,14 @@ namespace SchoolAPI.Controllers
             var courseStudents = await _repository.GetCourseStudentsAsync(courseId);
             if (courseStudents.Any(s => s.Id == studentId))
             {
-                return BadRequest();
+                return BadRequest("Student is already assigned to the course.");
+            }
+
+            var studentLessonsTimes = (await _lessonRepository.GetStudentLessonsAsync(studentId)).Select(l => l.Time);
+            var courseLessonsTimes = (await _lessonRepository.GetCourseLessonsAsync(courseId)).Select(l => l.Time);
+            if(studentLessonsTimes.Intersect(courseLessonsTimes).Any())
+            {
+                return BadRequest("Schedule overlap."); // return students and dates?
             }
 
             await _repository.AddStudentToCourseAsync(courseId, studentId);
