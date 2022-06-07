@@ -11,10 +11,12 @@ namespace SchoolAPI.Controllers
     {
         private readonly IStudentRepository _repository;
         private readonly ICourseRepository _courseRepository;
-        public StudentsController(IStudentRepository repository, ICourseRepository courseRepository)
+        private readonly ILessonRepository _lessonRepository;
+        public StudentsController(IStudentRepository repository, ICourseRepository courseRepository, ILessonRepository lessonRepository)
         {
             _repository = repository;
             _courseRepository = courseRepository;
+            _lessonRepository = lessonRepository;
         }
 
         [HttpGet]
@@ -122,6 +124,20 @@ namespace SchoolAPI.Controllers
             if (course is null)
             {
                 return NotFound();
+            }
+
+            var courseStudents = await _courseRepository.GetCourseStudentsAsync(courseId);
+            if (courseStudents.Any(s => s.Id == studentId))
+            {
+                return BadRequest("Course already has the student assigned.");
+            }
+
+            // check for schedule overlap
+            var studentLessonsTimes = (await _lessonRepository.GetStudentLessonsAsync(studentId)).Select(l => l.Time);
+            var courseLessonsTimes = (await _lessonRepository.GetCourseLessonsAsync(courseId)).Select(l => l.Time);
+            if (studentLessonsTimes.Intersect(courseLessonsTimes).Any())
+            {
+                return BadRequest("Schedule overlap");
             }
 
             await _repository.AddCourseToStudentAsync(studentId, courseId);
