@@ -44,14 +44,12 @@ namespace SchoolAPI.Controllers
         public async Task<ActionResult<LessonDto>> AddLessonsAsync(CreateLessonShortDto[] lessonsDto, int courseId)
         {
             var course = await _courseRepository.GetCourseAsync(courseId);
-            if(course is null)
+            if (course is null)
             {
                 return NotFound();
             }
 
-
             Lesson[] lessons = new Lesson[lessonsDto.Length];
-
             for (int i = 0; i < lessonsDto.Length; i++)
             {
                 TimeOnly lessonTime = LessonTimes[lessonsDto[i].LessonOfTheDay - 1];
@@ -62,26 +60,33 @@ namespace SchoolAPI.Controllers
                 lessons[i] = lesson;
             }
 
-            var currentLessons = await _repository.GetCourseLessonsAsync(courseId);
             var newLessonTimes = lessons.Select(l => l.Time);
+
+            var weekendLessons = newLessonTimes.Where(l => l.DayOfWeek == DayOfWeek.Saturday || l.DayOfWeek == DayOfWeek.Sunday));
+            if (weekendLessons.Any())
+            {
+                string weekendString = String.Join(", ", weekendLessons);
+                return BadRequest($"Trying to include a lesson that is on a weekend: {weekendString}");
+            }
+
+            var currentLessons = await _repository.GetCourseLessonsAsync(courseId);
             var currentLessonTimes = currentLessons.Select(l => l.Time);
             var lessonOverlap = currentLessonTimes.Where(l => newLessonTimes.Contains(l)).ToList();
-            if(lessonOverlap.Any())
+            if (lessonOverlap.Any())
             {
-                string overlapS = String.Join(", ",lessonOverlap);
-                
+                string overlapS = String.Join(", ", lessonOverlap);
                 return BadRequest($"Lesson(s) already exists: {overlapS}");
             }
 
             // check for schedule overlap (there must be an easier way to do this)
             var courseStudents = await _courseRepository.GetCourseStudentsAsync(courseId);
             var allStudentLessonTimes = new List<DateTime>();
-            foreach(var student in courseStudents)
+            foreach (var student in courseStudents)
             {
                 var studentLessons = await _repository.GetStudentLessonsAsync(student.Id);
-                foreach(var lesson in studentLessons)
+                foreach (var lesson in studentLessons)
                 {
-                    if(!allStudentLessonTimes.Contains(lesson.Time))
+                    if (!allStudentLessonTimes.Contains(lesson.Time))
                     {
                         allStudentLessonTimes.Add(lesson.Time);
                     }
@@ -110,10 +115,22 @@ namespace SchoolAPI.Controllers
                 return NotFound();
             }
 
+            if (lessonDto.DayDate.DayOfWeek == DayOfWeek.Saturday || lessonDto.DayDate.DayOfWeek == DayOfWeek.Sunday)
+            {
+                return BadRequest($"Trying to include a lesson that is on a weekend: {lessonDto.DayDate}");
+            }
+
             TimeOnly lessonTime = LessonTimes[lessonDto.LessonOfTheDay - 1];
 
             existingLesson.Course = new() { Id = lessonDto.CourseId };
             existingLesson.Time = new DateTime(lessonDto.DayDate.Year, lessonDto.DayDate.Month, lessonDto.DayDate.Day, lessonTime.Hour, lessonTime.Minute, 0);
+
+            var currentLessons = await _repository.GetCourseLessonsAsync(lessonDto.CourseId);
+            var currentLessonTimes = currentLessons.Select(l => l.Time);
+            if (currentLessonTimes.Any(l => l == existingLesson.Time))
+            {
+                return BadRequest($"Lesson at that time already exists: {existingLesson.Time}");
+            }
 
             await _repository.UpdateLessonAsync(existingLesson);
 
