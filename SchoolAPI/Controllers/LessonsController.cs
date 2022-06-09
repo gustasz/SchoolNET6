@@ -62,7 +62,7 @@ namespace SchoolAPI.Controllers
 
             var newLessonTimes = lessons.Select(l => l.Time);
 
-            var weekendLessons = newLessonTimes.Where(l => l.DayOfWeek == DayOfWeek.Saturday || l.DayOfWeek == DayOfWeek.Sunday));
+            var weekendLessons = newLessonTimes.Where(l => l.DayOfWeek == DayOfWeek.Saturday || l.DayOfWeek == DayOfWeek.Sunday);
             if (weekendLessons.Any())
             {
                 string weekendString = String.Join(", ", weekendLessons);
@@ -115,6 +115,12 @@ namespace SchoolAPI.Controllers
                 return NotFound();
             }
 
+            var existingCourse = await _courseRepository.GetCourseAsync(lessonDto.CourseId);
+            if (existingCourse is null)
+            {
+                return NotFound();
+            }
+
             if (lessonDto.DayDate.DayOfWeek == DayOfWeek.Saturday || lessonDto.DayDate.DayOfWeek == DayOfWeek.Sunday)
             {
                 return BadRequest($"Trying to include a lesson that is on a weekend: {lessonDto.DayDate}");
@@ -130,6 +136,26 @@ namespace SchoolAPI.Controllers
             if (currentLessonTimes.Any(l => l == existingLesson.Time))
             {
                 return BadRequest($"Lesson at that time already exists: {existingLesson.Time}");
+            }
+
+            // check for schedule overlap (there must be an easier way to do this)
+            var courseStudents = await _courseRepository.GetCourseStudentsAsync(lessonDto.CourseId);
+            var allStudentLessonTimes = new List<DateTime>();
+            foreach (var student in courseStudents)
+            {
+                var studentLessons = await _repository.GetStudentLessonsAsync(student.Id);
+                foreach (var lesson in studentLessons)
+                {
+                    if (!allStudentLessonTimes.Contains(lesson.Time))
+                    {
+                        allStudentLessonTimes.Add(lesson.Time);
+                    }
+                }
+            }
+
+            if (allStudentLessonTimes.Contains(existingLesson.Time))
+            {
+                return BadRequest($"Schedule overlap: {existingLesson.Time}"); // return course too?
             }
 
             await _repository.UpdateLessonAsync(existingLesson);

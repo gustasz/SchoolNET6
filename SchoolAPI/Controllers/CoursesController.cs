@@ -154,7 +154,6 @@ namespace SchoolAPI.Controllers
             {
                 return NotFound();
             }
-            
 
             var courseStudents = await _repository.GetCourseStudentsAsync(courseId);
             if (courseStudents.Any(s => s.Id == studentId))

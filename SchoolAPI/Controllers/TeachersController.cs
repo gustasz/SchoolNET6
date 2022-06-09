@@ -48,7 +48,7 @@ namespace SchoolAPI.Controllers
             };
 
             var result = await _repository.AddTeacherAsync(teacher);
-            
+
             return CreatedAtAction("GetTeacher", new { id = result.Id }, result.AsDto());
         }
 

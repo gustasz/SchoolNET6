@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using SchoolAPI.Data;
 using SchoolAPI.Models;
 
@@ -135,9 +134,12 @@ namespace SchoolAPI.Controllers
             // check for schedule overlap
             var studentLessonsTimes = (await _lessonRepository.GetStudentLessonsAsync(studentId)).Select(l => l.Time);
             var courseLessonsTimes = (await _lessonRepository.GetCourseLessonsAsync(courseId)).Select(l => l.Time);
-            if (studentLessonsTimes.Intersect(courseLessonsTimes).Any())
+
+            var overlapTimes = studentLessonsTimes.Intersect(courseLessonsTimes);
+            if (overlapTimes.Any())
             {
-                return BadRequest("Schedule overlap");
+                string overlapStrings = String.Join(", ", overlapTimes);
+                return BadRequest($"Schedule overlap: {overlapStrings}");
             }
 
             await _repository.AddCourseToStudentAsync(studentId, courseId);
@@ -161,12 +163,12 @@ namespace SchoolAPI.Controllers
                 return NotFound();
             }
 
-            if(!student.Courses.Contains(course))
+            if (!student.Courses.Contains(course))
             {
                 return NotFound();
             }
 
-            await _repository.DeleteCourseFromStudentAsync(studentId,courseId);
+            await _repository.DeleteCourseFromStudentAsync(studentId, courseId);
 
             return NoContent();
         }
