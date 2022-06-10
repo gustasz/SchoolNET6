@@ -64,7 +64,7 @@ namespace SchoolAPI.Controllers
             }
 
             var currentCourses = await GetCoursesAsync();
-            if (currentCourses.Any((c => c.SubjectId == courseDto.SubjectId && c.TeacherId == courseDto.TeacherId)))
+            if (currentCourses.Any((c => c.SubjectId == courseDto.SubjectId && c.TeacherId == courseDto.TeacherId && c.ForGrade == courseDto.ForGrade)))
             {
                 return BadRequest("Course already exists");
             }
@@ -73,6 +73,9 @@ namespace SchoolAPI.Controllers
 
             course.Subject = subject;
             course.Teacher = teacher;
+            course.ForGrade = courseDto.ForGrade;
+            course.Students = new List<Student>();
+            course.Lessons = new List<Lesson>();
 
             var result = await _repository.AddCourseAsync(course);
 
@@ -100,8 +103,15 @@ namespace SchoolAPI.Controllers
                 return NotFound();
             }
 
+            var currentCourses = await GetCoursesAsync();
+            if (currentCourses.Any((c => c.SubjectId == courseDto.SubjectId && c.TeacherId == courseDto.TeacherId && c.ForGrade == courseDto.ForGrade)))
+            {
+                return BadRequest("Course already exists");
+            }
+
             existingCourse.Subject = subject;
             existingCourse.Teacher = teacher;
+            existingCourse.ForGrade = courseDto.ForGrade;
 
             await _repository.UpdateCourseAsync(existingCourse);
 
@@ -153,6 +163,11 @@ namespace SchoolAPI.Controllers
             if (student is null)
             {
                 return NotFound();
+            }
+
+            if (course.ForGrade != student.Grade)
+            {
+                return BadRequest($"Trying to add a student that is in {student.Grade} grade into a {course.ForGrade} grade course.");
             }
 
             var courseStudents = await _repository.GetCourseStudentsAsync(courseId);

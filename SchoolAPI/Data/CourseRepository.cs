@@ -17,7 +17,7 @@ namespace SchoolAPI.Data
 
         public async Task<Course> GetCourseAsync(int courseId)
         {
-            return await _context.Courses.AsNoTracking().Include(c => c.Subject).Include(c => c.Teacher).FirstOrDefaultAsync(c => c.Id == courseId);
+            return await _context.Courses.AsNoTracking().Include(c => c.Subject).Include(c => c.Teacher).Include(c => c.Students).FirstOrDefaultAsync(c => c.Id == courseId);
         }
 
         public async Task<Course> AddCourseAsync(Course course)

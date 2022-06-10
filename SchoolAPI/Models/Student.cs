@@ -10,7 +10,7 @@ namespace SchoolAPI.Models
         [Required]
         public string LastName { get; set; } // add middle names?
         public DateTime BirthDate { get; set; }
-        [Required,Range(1,13)]
+        [Required,Range(1,12)]
         public int Grade { get; set; }
 
         public ICollection<Course> Courses { get; set; }

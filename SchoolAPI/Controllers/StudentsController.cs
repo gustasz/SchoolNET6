@@ -125,6 +125,11 @@ namespace SchoolAPI.Controllers
                 return NotFound();
             }
 
+            if (course.ForGrade != student.Grade)
+            {
+                return BadRequest($"Trying to add a student that is in {student.Grade} grade into a {course.ForGrade} grade course.");
+            }
+
             var courseStudents = await _courseRepository.GetCourseStudentsAsync(courseId);
             if (courseStudents.Any(s => s.Id == studentId))
             {
