@@ -64,7 +64,7 @@ namespace SchoolAPI.Controllers
             }
 
             var currentCourses = await GetCoursesAsync();
-            if (currentCourses.Any((c => c.SubjectId == courseDto.SubjectId && c.TeacherId == courseDto.TeacherId && c.ForGrade == courseDto.ForGrade)))
+            if (currentCourses.Any((c => c.SubjectId == courseDto.SubjectId && c.TeacherId == courseDto.TeacherId && c.ForGrade == courseDto.ForGrade && c.ForClass == courseDto.ForClass)))
             {
                 return BadRequest("Course already exists");
             }
@@ -74,6 +74,7 @@ namespace SchoolAPI.Controllers
             course.Subject = subject;
             course.Teacher = teacher;
             course.ForGrade = courseDto.ForGrade;
+            course.ForClass = courseDto.ForClass;
             course.Students = new List<Student>();
             course.Lessons = new List<Lesson>();
 
@@ -104,7 +105,7 @@ namespace SchoolAPI.Controllers
             }
 
             var currentCourses = await GetCoursesAsync();
-            if (currentCourses.Any((c => c.SubjectId == courseDto.SubjectId && c.TeacherId == courseDto.TeacherId && c.ForGrade == courseDto.ForGrade)))
+            if (currentCourses.Any((c => c.SubjectId == courseDto.SubjectId && c.TeacherId == courseDto.TeacherId && c.ForGrade == courseDto.ForGrade && c.ForClass == courseDto.ForClass)))
             {
                 return BadRequest("Course already exists");
             }
@@ -112,6 +113,7 @@ namespace SchoolAPI.Controllers
             existingCourse.Subject = subject;
             existingCourse.Teacher = teacher;
             existingCourse.ForGrade = courseDto.ForGrade;
+            existingCourse.ForClass = courseDto.ForClass;
 
             await _repository.UpdateCourseAsync(existingCourse);
 
@@ -168,6 +170,11 @@ namespace SchoolAPI.Controllers
             if (course.ForGrade != student.Grade)
             {
                 return BadRequest($"Trying to add a student that is in {student.Grade} grade into a {course.ForGrade} grade course.");
+            }
+
+            if (course.ForClass != 0 && course.ForClass != student.Class)
+            {
+                return BadRequest($"Trying to add a student in {student.Class} class into a {course.ForClass} only course.");
             }
 
             var courseStudents = await _repository.GetCourseStudentsAsync(courseId);
@@ -229,6 +236,56 @@ namespace SchoolAPI.Controllers
             }
 
             await _repository.AddStudentToCourseAsync(courseId, studentId);
+
+            return NoContent();
+        }
+
+        //PUT /courses/<course-id>/grade/<grade-id>/class/<class-id> // too long?
+        [HttpPut("{courseId}/grade/{gradeId}/class/{classId}")]
+        public async Task<ActionResult<CourseDto>> AddClassToCourse(int courseId, int gradeId, int classId)
+        {
+            var course = await _repository.GetCourseAsync(courseId);
+            if (course is null)
+            {
+                return NotFound();
+            }
+
+            var students = await _studentRepository.GetStudentsFromClassAsync(gradeId, classId);
+            if (students.First() is null)
+            {
+                return NotFound();
+            }
+
+            if (course.ForGrade != gradeId)
+            {
+                return BadRequest($"Trying to add students that are in {gradeId} grade into a {course.ForGrade} grade course.");
+            }
+
+            if (course.ForClass != 0 && course.ForClass != classId)
+            {
+                return BadRequest($"Trying to add students that are in {classId} class into a {course.ForClass} only course.");
+            }
+
+            /*var courseStudents = await _repository.GetCourseStudentsAsync(courseId);
+            if (courseStudents.Any(s => s.Id == studentId))
+            {
+                return BadRequest("Student is already assigned to the course.");
+            }*/
+            //var studentLessonsTimes = new List<DateTime>();
+
+            /*foreach(var student in students)
+            {
+                var studentLessonsTimes = (await _lessonRepository.GetStudentLessonsAsync(student.Id)).Select(l => l.Time);
+            }
+            var courseLessonsTimes = (await _lessonRepository.GetCourseLessonsAsync(courseId)).Select(l => l.Time);
+            var intersectTimes = studentLessonsTimes.Intersect(courseLessonsTimes);
+            if (intersectTimes.Any())
+            {
+                var overlapS = String.Join(", ", intersectTimes);
+                return BadRequest($"Schedule overlap: {overlapS}");
+            }*/
+
+            await _studentRepository.AddStudentsToCourseAsync(students.ToArray(),courseId);
 
             return NoContent();
         }
