@@ -266,24 +266,27 @@ namespace SchoolAPI.Controllers
                 return BadRequest($"Trying to add students that are in {classId} class into a {course.ForClass} only course.");
             }
 
-            /*var courseStudents = await _repository.GetCourseStudentsAsync(courseId);
-            if (courseStudents.Any(s => s.Id == studentId))
+            var courseStudents = await _repository.GetCourseStudentsAsync(courseId);
+            var intersectStudents = courseStudents.Intersect(students);
+            if (intersectStudents.Any()) 
             {
-                return BadRequest("Student is already assigned to the course.");
-            }*/
-            //var studentLessonsTimes = new List<DateTime>();
+                string intersectString = String.Join(", ", intersectStudents);
+                return BadRequest($"There are students already assigned in the course: {intersectString}");
+            }
 
-            /*foreach(var student in students)
+            List<DateTime> allStudentLessonTimes = new List<DateTime>();
+            foreach(var student in students)
             {
-                var studentLessonsTimes = (await _lessonRepository.GetStudentLessonsAsync(student.Id)).Select(l => l.Time);
+                List<DateTime> studentLessonsTimes = (await _lessonRepository.GetStudentLessonsAsync(student.Id)).Select(l => l.Time).ToList();
+                allStudentLessonTimes = studentLessonsTimes.Union(allStudentLessonTimes).ToList();
             }
             var courseLessonsTimes = (await _lessonRepository.GetCourseLessonsAsync(courseId)).Select(l => l.Time);
-            var intersectTimes = studentLessonsTimes.Intersect(courseLessonsTimes);
+            var intersectTimes = allStudentLessonTimes.Intersect(courseLessonsTimes);
             if (intersectTimes.Any())
             {
                 var overlapS = String.Join(", ", intersectTimes);
                 return BadRequest($"Schedule overlap: {overlapS}");
-            }*/
+            }
 
             await _studentRepository.AddStudentsToCourseAsync(students.ToArray(),courseId);
 
