@@ -86,5 +86,29 @@ namespace SchoolAPI.Data
             student.Courses.Remove(course);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<IEnumerable<Student>> GetStudentsFromClassAsync(int gradeId, int classId)
+        {
+            return await _context.Students.AsNoTracking().Where(s => s.Grade == gradeId).Where(s => s.Class == classId).ToListAsync();
+        }
+
+        public async Task<IEnumerable<Student>> AddStudentsToCourseAsync(Student[] students, int courseId)
+        {
+            var course = await _context.Courses.Include(c => c.Students).FirstOrDefaultAsync(c => c.Id == courseId);
+
+            if (course.Students is null)
+            {
+                course.Students = new List<Student>();
+            }
+
+            foreach (var student in students)
+            {
+                course.Students.Add(student);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return course.Students;
+        }
     }
 }

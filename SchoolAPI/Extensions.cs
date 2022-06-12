@@ -4,9 +4,10 @@ namespace SchoolAPI
 {
     public static class Extensions
     {
+        //public static readonly string[] classesAsString = { "", "A", "B", "C", "D" }; // display it as letters, but don't want to lose checking for range?
         public static StudentDto AsDto(this Student student)
         {
-            return new StudentDto(student.Id, student.FirstName, student.LastName, student.BirthDate, student.Grade);
+            return new StudentDto(student.Id, student.FirstName, student.LastName, student.BirthDate, student.Grade, student.Class);
         }
 
         public static TeacherDto AsDto(this Teacher teacher)
@@ -16,7 +17,7 @@ namespace SchoolAPI
 
         public static CourseDto AsDto(this Course course)
         {
-            return new CourseDto(course.Id, course.Subject.Id, course.Subject.Name, course.Teacher.Id, course.Teacher.FirstName + " " + course.Teacher.LastName, course.Students.Count());
+            return new CourseDto(course.Id, course.Subject.Id, course.Subject.Name, course.ForGrade,course.ForClass, course.Teacher.Id, course.Teacher.FirstName + " " + course.Teacher.LastName, course.Students.Count());
         }
 
         public static SubjectDto AsDto(this Subject subject)

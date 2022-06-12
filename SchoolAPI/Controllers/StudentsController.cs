@@ -45,11 +45,11 @@ namespace SchoolAPI.Controllers
         {
             Student student = new()
             {
-                //Id = 
                 FirstName = studentDto.FirstName,
                 LastName = studentDto.LastName,
                 BirthDate = studentDto.BirthDate,
-                Grade = studentDto.Grade
+                Grade = studentDto.Grade,
+                Class = studentDto.Class
             };
 
             student.BirthDate = new DateTime(student.BirthDate.Year, student.BirthDate.Month, student.BirthDate.Day);
@@ -73,6 +73,7 @@ namespace SchoolAPI.Controllers
             existingStudent.LastName = studentDto.LastName;
             existingStudent.BirthDate = studentDto.BirthDate;
             existingStudent.Grade = studentDto.Grade;
+            existingStudent.Class = studentDto.Class;
 
             await _repository.UpdateStudentAsync(existingStudent);
 
@@ -125,6 +126,16 @@ namespace SchoolAPI.Controllers
                 return NotFound();
             }
 
+            if (course.ForGrade != student.Grade)
+            {
+                return BadRequest($"Trying to add a student that is in {student.Grade} grade into a {course.ForGrade} grade course.");
+            }
+
+            if (course.ForClass != 0 && course.ForClass != student.Class)
+            {
+                return BadRequest($"Trying to add a student in {student.Class} class into a {course.ForClass} only course.");
+            }
+
             var courseStudents = await _courseRepository.GetCourseStudentsAsync(courseId);
             if (courseStudents.Any(s => s.Id == studentId))
             {
@@ -149,7 +160,7 @@ namespace SchoolAPI.Controllers
 
         //DELETE /students/<student-id>/courses/<course-id>
         [HttpDelete("{studentId}/courses/{courseId}")]
-        public async Task<ActionResult> DeleteStudentFromCourse(int studentId, int courseId)
+        public async Task<ActionResult> DeleteStudentFromCourseAsync(int studentId, int courseId)
         {
             var student = await _repository.GetStudentAsync(studentId);
             if (student is null)
@@ -171,6 +182,15 @@ namespace SchoolAPI.Controllers
             await _repository.DeleteCourseFromStudentAsync(studentId, courseId);
 
             return NoContent();
+        }
+
+        //GET /students/grade/<grade-id>/class/<class-id>
+        [HttpGet("grade/{gradeId}/class/{classId}")]
+        public async Task<ActionResult<IEnumerable<StudentDto>>> GetStudentsFromClassAsync(int gradeId, int classId)
+        {
+            var students = (await _repository.GetStudentsFromClassAsync(gradeId,classId))
+                            .Select(student => student.AsDto());
+            return Ok(students);
         }
     }
 }
