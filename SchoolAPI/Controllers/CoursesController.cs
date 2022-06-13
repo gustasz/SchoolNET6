@@ -292,5 +292,43 @@ namespace SchoolAPI.Controllers
 
             return NoContent();
         }
+
+        //DELETE /courses/<course-id>/grade/<grade-id>/class/<class-id> // too long?
+        [HttpDelete("{courseId}/grade/{gradeId}/class/{classId}")]
+        public async Task<ActionResult> DeleteClassFromCourse(int courseId, int gradeId, int classId)
+        {
+            var course = await _repository.GetCourseAsync(courseId);
+            if (course is null)
+            {
+                return NotFound();
+            }
+
+            var students = await _studentRepository.GetStudentsFromClassAsync(gradeId, classId);
+            if (students.First() is null)
+            {
+                return NotFound();
+            }
+
+            if (course.ForGrade != gradeId)
+            {
+                return BadRequest($"Trying to remove students that are in {gradeId} grade from a {course.ForGrade} grade course.");
+            }
+
+            if (course.ForClass != 0 && course.ForClass != classId)
+            {
+                return BadRequest($"Trying to remove students that are in {classId} class from a {course.ForClass} only course.");
+            }
+
+            var courseStudentsIds = (await _repository.GetCourseStudentsAsync(courseId)).Select(s => s.Id);
+            var studentIds = students.Select(s => s.Id);
+            if (!courseStudentsIds.Intersect(studentIds).Any())
+            {
+                return NotFound();
+            }
+
+            await _repository.DeleteClassFromCourseAsync(courseId, gradeId, classId);
+
+            return NoContent();
+        }
     }
 }

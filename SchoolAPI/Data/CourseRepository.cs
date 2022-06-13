@@ -73,7 +73,6 @@ namespace SchoolAPI.Data
             return course;
         }
 
-        //DELETE /courses/<course-id>/students/<student-id>
         public async Task DeleteStudentFromCourseAsync(int courseId, int studentId)
         {
             var course = await _context.Courses.Include(c => c.Students).FirstOrDefaultAsync(c => c.Id == courseId);
@@ -82,6 +81,19 @@ namespace SchoolAPI.Data
             course.Students.Remove(student);
             await _context.SaveChangesAsync();
 
+        }
+
+        public async Task DeleteClassFromCourseAsync(int courseId, int gradeId, int classId)
+        {
+            var course = await _context.Courses.Include(c => c.Students).FirstOrDefaultAsync(c => c.Id == courseId);
+            var students = course.Students.Where(s => s.Grade == gradeId && s.Class == classId).ToList();
+
+            foreach (var student in students)
+            {
+                course.Students.Remove(student);
+            }
+
+            await _context.SaveChangesAsync();
         }
     }
 }
