@@ -12,12 +12,12 @@ namespace SchoolAPI.Data
         }
         public async Task<IEnumerable<Course>> GetCoursesAsync()
         {
-            return await _context.Courses.AsNoTracking().Include(c => c.Subject).Include(c => c.Teacher).Include(c => c.Students).ToListAsync();
+            return await _context.Courses.AsNoTracking().Include(c => c.Subject).Include(c => c.Teacher).Include(c => c.Students).Include(c => c.Lessons).ToListAsync();
         }
 
         public async Task<Course> GetCourseAsync(int courseId)
         {
-            return await _context.Courses.AsNoTracking().Include(c => c.Subject).Include(c => c.Teacher).Include(c => c.Students).FirstOrDefaultAsync(c => c.Id == courseId);
+            return await _context.Courses.AsNoTracking().Include(c => c.Subject).Include(c => c.Teacher).Include(c => c.Students).Include(c => c.Lessons).FirstOrDefaultAsync(c => c.Id == courseId);
         }
 
         public async Task<Course> AddCourseAsync(Course course)
@@ -83,10 +83,10 @@ namespace SchoolAPI.Data
 
         }
 
-        public async Task DeleteClassFromCourseAsync(int courseId, int gradeId, int classId)
+        public async Task DeleteClassFromCourseAsync(int courseId, int gradeNum, int classNum)
         {
             var course = await _context.Courses.Include(c => c.Students).FirstOrDefaultAsync(c => c.Id == courseId);
-            var students = course.Students.Where(s => s.Grade == gradeId && s.Class == classId).ToList();
+            var students = course.Students.Where(s => s.Grade == gradeNum && s.Class == classNum).ToList();
 
             foreach (var student in students)
             {

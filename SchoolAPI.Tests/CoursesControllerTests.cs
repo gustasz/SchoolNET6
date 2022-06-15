@@ -14,11 +14,11 @@ namespace SchoolAPI.Tests
     public class CoursesControllerTests
     {
         private readonly CoursesController _sut;
-        private readonly Mock<ICourseRepository> _courseRepoMock = new Mock<ICourseRepository>();
-        private readonly Mock<ISubjectRepository> _subjectRepoMock = new Mock<ISubjectRepository>();
-        private readonly Mock<ITeacherRepository> _teacherRepoMock = new Mock<ITeacherRepository>();
-        private readonly Mock<IStudentRepository> _studentRepoMock = new Mock<IStudentRepository>();
-        private readonly Mock<ILessonRepository> _lessonRepoMock = new Mock<ILessonRepository>();
+        private readonly Mock<ICourseRepository> _courseRepoMock = new();
+        private readonly Mock<ISubjectRepository> _subjectRepoMock = new();
+        private readonly Mock<ITeacherRepository> _teacherRepoMock = new();
+        private readonly Mock<IStudentRepository> _studentRepoMock = new();
+        private readonly Mock<ILessonRepository> _lessonRepoMock = new();
         public CoursesControllerTests()
         {
             _sut = new CoursesController(_courseRepoMock.Object, _subjectRepoMock.Object, _teacherRepoMock.Object, _studentRepoMock.Object, _lessonRepoMock.Object);
@@ -28,9 +28,9 @@ namespace SchoolAPI.Tests
         public async Task AddClassToCourse_ReturnsBadRequest_WhenAnyStudentHasScheduleOverlap()
         {
             // Arrange
-            List<Lesson> firstLessons = new List<Lesson> { new Lesson { Time = DateTime.Parse("2022-06-12 15:00")} };
-            List<Lesson> courseLessons = new List<Lesson> { new Lesson { Time = DateTime.Parse("2022-06-12 15:00") } };
-            List<Student> students = new List<Student> { new Student { Id = 4, Grade = 2, Class = 1} };
+            List<Lesson> firstLessons = new() { new Lesson { Time = DateTime.Parse("2022-06-12 15:00")} };
+            List<Lesson> courseLessons = new() { new Lesson { Time = DateTime.Parse("2022-06-12 15:00") } };
+            List<Student> students = new() { new Student { Id = 4, Grade = 2, Class = 1} };
 
             var course = new Course { Id = 50, ForGrade = 2, ForClass = 1 };
             _lessonRepoMock.Setup(x => x.GetStudentLessonsAsync(4))

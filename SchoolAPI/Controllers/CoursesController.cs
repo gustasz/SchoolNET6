@@ -224,7 +224,7 @@ namespace SchoolAPI.Controllers
             return NoContent();
         }
 
-        //PUT /courses/coursetimes
+       /* //PUT /courses/coursetimes
         [HttpPut("coursetimes")]
         public async Task<ActionResult<CourseDto>> AddCourseTimeToCourse(int courseId, int studentId)
         {
@@ -238,11 +238,11 @@ namespace SchoolAPI.Controllers
             await _repository.AddStudentToCourseAsync(courseId, studentId);
 
             return NoContent();
-        }
+        }*/
 
-        //PUT /courses/<course-id>/grade/<grade-id>/class/<class-id> // too long?
-        [HttpPut("{courseId}/grade/{gradeId}/class/{classId}")]
-        public async Task<ActionResult<CourseDto>> AddClassToCourse(int courseId, int gradeId, int classId)
+        //PUT /courses/<course-id>/grade
+        [HttpPut("{courseId}/grade")]
+        public async Task<ActionResult<CourseDto>> AddClassToCourse(int courseId, int gradeNum, int classNum)
         {
             var course = await _repository.GetCourseAsync(courseId);
             if (course is null)
@@ -250,20 +250,20 @@ namespace SchoolAPI.Controllers
                 return NotFound();
             }
 
-            var students = await _studentRepository.GetStudentsFromClassAsync(gradeId, classId);
+            var students = await _studentRepository.GetStudentsFromClassAsync(gradeNum, classNum);
             if (students.First() is null)
             {
                 return NotFound();
             }
 
-            if (course.ForGrade != gradeId)
+            if (course.ForGrade != gradeNum)
             {
-                return BadRequest($"Trying to add students that are in {gradeId} grade into a {course.ForGrade} grade course.");
+                return BadRequest($"Trying to add students that are in {gradeNum} grade into a {course.ForGrade} grade course.");
             }
 
-            if (course.ForClass != 0 && course.ForClass != classId)
+            if (course.ForClass != 0 && course.ForClass != classNum)
             {
-                return BadRequest($"Trying to add students that are in {classId} class into a {course.ForClass} only course.");
+                return BadRequest($"Trying to add students that are in {classNum} class into a {course.ForClass} only course.");
             }
 
             var courseStudents = await _repository.GetCourseStudentsAsync(courseId);
@@ -274,7 +274,7 @@ namespace SchoolAPI.Controllers
                 return BadRequest($"There are students already assigned in the course: {intersectString}");
             }
 
-            List<DateTime> allStudentLessonTimes = new List<DateTime>();
+            List<DateTime> allStudentLessonTimes = new();
             foreach(var student in students)
             {
                 List<DateTime> studentLessonsTimes = (await _lessonRepository.GetStudentLessonsAsync(student.Id)).Select(l => l.Time).ToList();
@@ -293,9 +293,9 @@ namespace SchoolAPI.Controllers
             return NoContent();
         }
 
-        //DELETE /courses/<course-id>/grade/<grade-id>/class/<class-id> // too long?
-        [HttpDelete("{courseId}/grade/{gradeId}/class/{classId}")]
-        public async Task<ActionResult> DeleteClassFromCourse(int courseId, int gradeId, int classId)
+        //DELETE /courses/<course-id>/grade
+        [HttpDelete("{courseId}/grade")]
+        public async Task<ActionResult> DeleteClassFromCourse(int courseId, int gradeNum, int classNum)
         {
             var course = await _repository.GetCourseAsync(courseId);
             if (course is null)
@@ -303,20 +303,20 @@ namespace SchoolAPI.Controllers
                 return NotFound();
             }
 
-            var students = await _studentRepository.GetStudentsFromClassAsync(gradeId, classId);
+            var students = await _studentRepository.GetStudentsFromClassAsync(gradeNum, classNum);
             if (students.First() is null)
             {
                 return NotFound();
             }
 
-            if (course.ForGrade != gradeId)
+            if (course.ForGrade != gradeNum)
             {
-                return BadRequest($"Trying to remove students that are in {gradeId} grade from a {course.ForGrade} grade course.");
+                return BadRequest($"Trying to remove students that are in {gradeNum} grade from a {course.ForGrade} grade course.");
             }
 
-            if (course.ForClass != 0 && course.ForClass != classId)
+            if (course.ForClass != 0 && course.ForClass != classNum)
             {
-                return BadRequest($"Trying to remove students that are in {classId} class from a {course.ForClass} only course.");
+                return BadRequest($"Trying to remove students that are in {classNum} class from a {course.ForClass} only course.");
             }
 
             var courseStudentsIds = (await _repository.GetCourseStudentsAsync(courseId)).Select(s => s.Id);
@@ -326,7 +326,7 @@ namespace SchoolAPI.Controllers
                 return NotFound();
             }
 
-            await _repository.DeleteClassFromCourseAsync(courseId, gradeId, classId);
+            await _repository.DeleteClassFromCourseAsync(courseId, gradeNum, classNum);
 
             return NoContent();
         }
