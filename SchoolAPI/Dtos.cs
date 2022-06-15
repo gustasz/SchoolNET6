@@ -2,13 +2,13 @@
 
 namespace SchoolAPI
 {
-    public record StudentDto(int Id, string FirstName, string LastName, DateTime BirthDate, [Range(1,12)] int Grade, [Range(0,4)] int Class);
+    public record StudentDto(int Id, string FullName, DateTime BirthDate, string FullGrade);
     public record CreateStudentDto(string FirstName, string LastName, DateTime BirthDate, [Range(1, 12)] int Grade, [Range(0, 4)] int Class);
     public record UpdateStudentDto(string FirstName, string LastName, DateTime BirthDate, [Range(1, 12)] int Grade, [Range(0, 4)] int Class);
-    public record TeacherDto(int Id, string FirstName, string LastName, DateTime BirthDate);
+    public record TeacherDto(int Id, string FullName, DateTime BirthDate);
     public record CreateTeacherDto(string FirstName, string LastName, DateTime BirthDate);
     public record UpdateTeacherDto(string FirstName, string LastName, DateTime BirthDate);
-    public record CourseDto(int Id, int SubjectId, string SubjectName, [Range(1, 12)] int ForGrade, [Range(0, 4)] int ForClass, int TeacherId, string TeacherName, int StudentCount);
+    public record CourseDto(int Id, int SubjectId, string SubjectName, int ForGrade, int ForClass, int TeacherId, string TeacherName, int StudentCount, int LessonCount);
     public record CreateCourseDto(int SubjectId, [Range(1, 12)] int ForGrade, [Range(0, 4)] int ForClass, int TeacherId);
     public record UpdateCourseDto(int SubjectId, [Range(1, 12)] int ForGrade, [Range(0, 4)] int ForClass, int TeacherId);
     public record SubjectDto(int Id, string Name);

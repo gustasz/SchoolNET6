@@ -66,7 +66,7 @@ namespace SchoolAPI.Controllers
             if (weekendLessons.Any())
             {
                 string weekendString = String.Join(", ", weekendLessons);
-                return BadRequest($"Trying to include a lesson that is on a weekend: {weekendString}");
+                return BadRequest($"Trying to include lesson(s) on a weekend: {weekendString}");
             }
 
             var currentLessons = await _repository.GetCourseLessonsAsync(courseId);
@@ -78,7 +78,7 @@ namespace SchoolAPI.Controllers
                 return BadRequest($"Lesson(s) already exists: {overlapS}");
             }
 
-            // check for schedule overlap (there must be an easier way to do this)
+            // check for student schedule overlap (there must be a better way to do this)
             var courseStudents = await _courseRepository.GetCourseStudentsAsync(courseId);
             var allStudentLessonTimes = new List<DateTime>();
             foreach (var student in courseStudents)
@@ -92,12 +92,25 @@ namespace SchoolAPI.Controllers
                     }
                 }
             }
-
-            var timeOverlap = allStudentLessonTimes.Intersect(newLessonTimes);
-            if (timeOverlap.Any())
+            var timeOverlapS = allStudentLessonTimes.Intersect(newLessonTimes);
+            if (timeOverlapS.Any())
             {
-                string oLessons = String.Join(", ", timeOverlap);
-                return BadRequest($"Schedule overlap: {oLessons}"); // return course too?
+                string oLessons = String.Join(", ", timeOverlapS);
+                return BadRequest($"Schedule overlap for students: {oLessons}"); // return course too?
+            }
+
+            // check for teacher schedule overlap (there must be a better way to do this)
+            var allTeacherLessonTimes = new List<DateTime>();
+            var teacherLessons = await _repository.GetTeacherLessonsAsync(course.Teacher.Id);
+            foreach (var lesson in teacherLessons)
+            {
+                allTeacherLessonTimes.Add(lesson.Time);
+            }
+            var timeOverlapT = allTeacherLessonTimes.Intersect(newLessonTimes);
+            if (timeOverlapT.Any())
+            {
+                string oLessons = String.Join(", ", timeOverlapT);
+                return BadRequest($"Schedule overlap for teacher: {oLessons}"); // return course too?
             }
 
             var result = await _repository.CreateLessonsForCourseAsync(lessons);
@@ -138,7 +151,7 @@ namespace SchoolAPI.Controllers
                 return BadRequest($"Lesson at that time already exists: {existingLesson.Time}");
             }
 
-            // check for schedule overlap (there must be an easier way to do this)
+            // check for student schedule overlap (there must be a better way to do this)
             var courseStudents = await _courseRepository.GetCourseStudentsAsync(lessonDto.CourseId);
             var allStudentLessonTimes = new List<DateTime>();
             foreach (var student in courseStudents)
@@ -152,10 +165,21 @@ namespace SchoolAPI.Controllers
                     }
                 }
             }
-
             if (allStudentLessonTimes.Contains(existingLesson.Time))
             {
-                return BadRequest($"Schedule overlap: {existingLesson.Time}"); // return course too?
+                return BadRequest($"Schedule overlap for students: {existingLesson.Time}"); // return course too?
+            }
+
+            // check for teacher schedule overlap (there must be a better way to do this)
+            var allTeacherLessonTimes = new List<DateTime>();
+            var teacherLessons = await _repository.GetTeacherLessonsAsync(existingCourse.Teacher.Id);
+            foreach (var lesson in teacherLessons)
+            {
+                allTeacherLessonTimes.Add(lesson.Time);
+            }
+            if (allTeacherLessonTimes.Contains(existingLesson.Time))
+            {
+                return BadRequest($"Schedule overlap for teacher: {existingLesson.Time}"); // return course too?
             }
 
             await _repository.UpdateLessonAsync(existingLesson);
@@ -178,7 +202,7 @@ namespace SchoolAPI.Controllers
             return NoContent();
         }
 
-        [HttpGet("/course/{courseId}")]
+        [HttpGet("course/{courseId}")]
         public async Task<IEnumerable<LessonDto>> GetCourseLessonsAsync(int courseId)
         {
             var lessons = (await _repository.GetCourseLessonsAsync(courseId))
@@ -186,7 +210,7 @@ namespace SchoolAPI.Controllers
             return lessons;
         }
 
-        [HttpGet("/student/{studentId}")]
+        [HttpGet("student/{studentId}")]
         public async Task<IEnumerable<LessonDto>> GetStudentLessonsAsync(int studentId)
         {
             var lessons = (await _repository.GetStudentLessonsAsync(studentId))
@@ -194,10 +218,26 @@ namespace SchoolAPI.Controllers
             return lessons;
         }
 
-        [HttpGet("/student/{studentId}/day")]
+        [HttpGet("student/{studentId}/day")]
         public async Task<IEnumerable<LessonDto>> GetStudentLessonsForDayAsync(int studentId, DateTime dayDate)
         {
             var lessons = (await _repository.GetStudentLessonsAsync(studentId));
+            var dayLessons = lessons.Where(l => l.Time.Date == dayDate.Date).OrderBy(l => l.Time);
+            return dayLessons.Select(lesson => lesson.AsDto());
+        }
+
+        [HttpGet("teacher/{teacherId}")]
+        public async Task<IEnumerable<LessonDto>> GetTeacherLessonsAsync(int teacherId)
+        {
+            var lessons = (await _repository.GetTeacherLessonsAsync(teacherId))
+                .Select(lesson => lesson.AsDto());
+            return lessons;
+        }
+
+        [HttpGet("teacher/{teacherId}/day")]
+        public async Task<IEnumerable<LessonDto>> GetTeacherLessonsForDayAsync(int teacherId, DateTime dayDate)
+        {
+            var lessons = (await _repository.GetTeacherLessonsAsync(teacherId));
             var dayLessons = lessons.Where(l => l.Time.Date == dayDate.Date).OrderBy(l => l.Time);
             return dayLessons.Select(lesson => lesson.AsDto());
         }

@@ -93,5 +93,16 @@ namespace SchoolAPI.Data
             }
             return lessons;
         }
+
+        public async Task<IEnumerable<Lesson>> GetTeacherLessonsAsync(int teacherId)
+        {
+            var teacher = await _context.Teachers.AsNoTracking().Include(t => t.Courses).ThenInclude(c => c.Lessons).FirstOrDefaultAsync(t => t.Id == teacherId);
+            var lessons = new List<Lesson>();
+            foreach (var course in teacher.Courses)
+            {
+                lessons.AddRange(course.Lessons);
+            }
+            return lessons;
+        }
     }
 }

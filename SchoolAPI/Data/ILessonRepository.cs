@@ -12,7 +12,7 @@ namespace SchoolAPI.Data
         Task DeleteLessonAsync(int lessonId);
         Task<IEnumerable<Lesson>> GetCourseLessonsAsync(int courseId);
         Task<IEnumerable<Lesson>> GetStudentLessonsAsync(int studentId);
-        // get lessons for student for certain day
+        Task<IEnumerable<Lesson>> GetTeacherLessonsAsync(int teacherId);
         // get all lessons for a course
     }
 }

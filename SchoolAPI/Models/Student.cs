@@ -8,11 +8,12 @@ namespace SchoolAPI.Models
         [Required]
         public string FirstName { get; set; }
         [Required]
-        public string LastName { get; set; } // add middle names?
+        public string LastName { get; set; }
         public DateTime BirthDate { get; set; }
-        [Required,Range(1,12)]
+        [Range(1,12)]
         public int Grade { get; set; }
-        public int Class { get; set; } // 0 if there's only one class in the whole grade, otherwise 1 = a, 2 = b etc.
+        [Range(0, 4)]
+        public int Class { get; set; } // 0 if the school has only 1 class in that grade, otherwise 1 = A, 2 = B, 3 = C, 4 = D
 
         public ICollection<Course> Courses { get; set; }
     }
