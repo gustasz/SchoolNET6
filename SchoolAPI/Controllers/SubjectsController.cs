@@ -9,9 +9,11 @@ namespace SchoolAPI.Controllers
     public class SubjectsController : ControllerBase
     {
         private readonly ISubjectRepository _repository;
-        public SubjectsController(ISubjectRepository repository)
+        private readonly ILogger<SubjectsController> _logger;
+        public SubjectsController(ISubjectRepository repository, ILogger<SubjectsController> logger)
         {
             _repository = repository;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -30,6 +32,7 @@ namespace SchoolAPI.Controllers
 
             if (subject is null)
             {
+                _logger.LogWarning("Subject with id:{Id} Not Found",id);
                 return NotFound();
             }
 
@@ -56,6 +59,7 @@ namespace SchoolAPI.Controllers
 
             if (existingSubject is null)
             {
+                _logger.LogWarning("Subject with id:{Id} Not Found", id);
                 return NotFound();
             }
 
@@ -73,6 +77,7 @@ namespace SchoolAPI.Controllers
 
             if (existingSubject is null)
             {
+                _logger.LogWarning("Subject with id:{Id} Not Found", id);
                 return NotFound();
             }
 
