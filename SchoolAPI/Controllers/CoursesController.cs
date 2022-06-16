@@ -13,17 +13,20 @@ namespace SchoolAPI.Controllers
         private readonly ITeacherRepository _teacherRepository;
         private readonly IStudentRepository _studentRepository;
         private readonly ILessonRepository _lessonRepository;
+        private readonly ILogger<CoursesController> _logger;
         public CoursesController(ICourseRepository repository,
                                  ISubjectRepository subjectRepository,
                                  ITeacherRepository teacherRepository,
                                  IStudentRepository studentRepository,
-                                 ILessonRepository lessonRepository)
+                                 ILessonRepository lessonRepository,
+                                 ILogger<CoursesController> logger)
         {
             _repository = repository;
             _subjectRepository = subjectRepository;
             _teacherRepository = teacherRepository;
             _studentRepository = studentRepository;
             _lessonRepository = lessonRepository;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -42,6 +45,7 @@ namespace SchoolAPI.Controllers
 
             if (course is null)
             {
+                _logger.LogWarning("Course with id:{Id} Not Found", id);
                 return NotFound();
             }
 
@@ -54,12 +58,14 @@ namespace SchoolAPI.Controllers
             var subject = await _subjectRepository.GetSubjectAsync(courseDto.SubjectId);
             if (subject is null)
             {
+                _logger.LogWarning("Subject with id:{Id} Not Found", courseDto.SubjectId);
                 return NotFound("Subject not found.");
             }
 
             var teacher = await _teacherRepository.GetTeacherAsync(courseDto.TeacherId);
             if (teacher is null)
             {
+                _logger.LogWarning("Teacher with id:{Id} Not Found", courseDto.TeacherId);
                 return NotFound("Teacher not found.");
             }
 
@@ -89,18 +95,21 @@ namespace SchoolAPI.Controllers
             var existingCourse = await _repository.GetCourseAsync(id);
             if (existingCourse is null)
             {
+                _logger.LogWarning("Course with id:{Id} Not Found", id);
                 return NotFound();
             }
 
             var subject = await _subjectRepository.GetSubjectAsync(courseDto.SubjectId);
             if (subject is null)
             {
+                _logger.LogWarning("Subject with id:{Id} Not Found", courseDto.SubjectId);
                 return NotFound();
             }
 
             var teacher = await _teacherRepository.GetTeacherAsync(courseDto.TeacherId);
             if (teacher is null)
             {
+                _logger.LogWarning("Teacher with id:{Id} Not Found", courseDto.TeacherId);
                 return NotFound();
             }
 
@@ -127,6 +136,7 @@ namespace SchoolAPI.Controllers
 
             if (course is null)
             {
+                _logger.LogWarning("Course with id:{Id} Not Found", id);
                 return NotFound();
             }
 
@@ -142,6 +152,7 @@ namespace SchoolAPI.Controllers
             var course = await _repository.GetCourseAsync(courseId);
             if (course is null)
             {
+                _logger.LogWarning("Course with id:{Id} Not Found", courseId);
                 return NotFound();
             }
 
@@ -158,12 +169,14 @@ namespace SchoolAPI.Controllers
             var course = await _repository.GetCourseAsync(courseId);
             if (course is null)
             {
+                _logger.LogWarning("Course with id:{Id} Not Found", courseId);
                 return NotFound();
             }
 
             var student = await _studentRepository.GetStudentAsync(studentId);
             if (student is null)
             {
+                _logger.LogWarning("Student with id:{Id} Not Found", studentId);
                 return NotFound();
             }
 
@@ -204,18 +217,21 @@ namespace SchoolAPI.Controllers
             var course = await _repository.GetCourseAsync(courseId);
             if (course is null)
             {
+                _logger.LogWarning("Course with id:{Id} Not Found", courseId);
                 return NotFound();
             }
 
             var student = await _studentRepository.GetStudentAsync(studentId);
             if (student is null)
             {
+                _logger.LogWarning("Student with id:{Id} Not Found", studentId);
                 return NotFound();
             }
 
             var courseStudents = await _repository.GetCourseStudentsAsync(courseId);
             if (!courseStudents.Any(s => s.Id == studentId))
             {
+                _logger.LogWarning("Student with id:{StudentId} Not Found in Course with id:{CourseID} students", studentId, courseId);
                 return NotFound();
             }
 
@@ -247,12 +263,14 @@ namespace SchoolAPI.Controllers
             var course = await _repository.GetCourseAsync(courseId);
             if (course is null)
             {
+                _logger.LogWarning("Course with id:{Id} Not Found", courseId);
                 return NotFound();
             }
 
             var students = await _studentRepository.GetStudentsFromClassAsync(gradeNum, classNum);
-            if (students.First() is null)
+            if (!students.Any())
             {
+                _logger.LogWarning("Students in grade:{GradeNum} and class:{ClassNum} Not Found", gradeNum, classNum);
                 return NotFound();
             }
 
@@ -300,12 +318,14 @@ namespace SchoolAPI.Controllers
             var course = await _repository.GetCourseAsync(courseId);
             if (course is null)
             {
+                _logger.LogWarning("Course with id:{Id} Not Found", courseId);
                 return NotFound();
             }
 
             var students = await _studentRepository.GetStudentsFromClassAsync(gradeNum, classNum);
-            if (students.First() is null)
+            if (!students.Any())
             {
+                _logger.LogWarning("Students in grade:{GradeNum} and class:{ClassNum} Not Found", gradeNum, classNum);
                 return NotFound();
             }
 
@@ -323,6 +343,7 @@ namespace SchoolAPI.Controllers
             var studentIds = students.Select(s => s.Id);
             if (!courseStudentsIds.Intersect(studentIds).Any())
             {
+                _logger.LogWarning("Students in grade:{GradeNum} and class:{ClassNum} Not Found in Course with id:{CourseId} students", gradeNum, classNum, courseId);
                 return NotFound();
             }
 

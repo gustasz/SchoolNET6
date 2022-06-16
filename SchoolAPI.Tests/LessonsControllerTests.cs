@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using SchoolAPI.Controllers;
 using SchoolAPI.Data;
@@ -16,9 +17,10 @@ namespace SchoolAPI.Tests
         private readonly LessonsController _sut;
         private readonly Mock<ILessonRepository> _lessonRepoMock = new();
         private readonly Mock<ICourseRepository> _courseRepoMock = new();
+        private readonly Mock<ILogger<LessonsController>> _loggerRepoMock = new();
         public LessonsControllerTests()
         {
-            _sut = new LessonsController(_lessonRepoMock.Object,_courseRepoMock.Object);
+            _sut = new LessonsController(_lessonRepoMock.Object, _courseRepoMock.Object, _loggerRepoMock.Object);
         }
 
         [Fact]

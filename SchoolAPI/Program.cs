@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using SchoolAPI.Data;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((ctx, cfg) => cfg.ReadFrom.Configuration(ctx.Configuration));
 
 // Add services to the container.
 
@@ -27,10 +30,24 @@ if (app.Environment.IsDevelopment())
 
 }
 
+app.UseSerilogRequestLogging();
+
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+try
+{
+    Log.Information("Application Starting Up");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application failed to start.");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

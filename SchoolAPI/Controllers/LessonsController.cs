@@ -10,13 +10,15 @@ namespace SchoolAPI.Controllers
     {
         private readonly ILessonRepository _repository;
         private readonly ICourseRepository _courseRepository;
+        private readonly ILogger<LessonsController> _logger;
 
         public static readonly TimeOnly[] LessonTimes = { // Lessons can only start at predetermined times by school. For example, 5th lesson of the day can only start at 12:00
             new TimeOnly(8,0), new TimeOnly(8,55),new TimeOnly(9,50),new TimeOnly(10,55),new TimeOnly(12,0),new TimeOnly(12,55),new TimeOnly(13,50),new TimeOnly(14,45)};
-        public LessonsController(ILessonRepository repository, ICourseRepository courseRepository)
+        public LessonsController(ILessonRepository repository, ICourseRepository courseRepository, ILogger<LessonsController> logger)
         {
             _repository = repository;
             _courseRepository = courseRepository;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -34,6 +36,7 @@ namespace SchoolAPI.Controllers
 
             if (lesson is null)
             {
+                _logger.LogWarning("Lesson with id:{Id} Not Found", id);
                 return NotFound();
             }
 
@@ -46,6 +49,7 @@ namespace SchoolAPI.Controllers
             var course = await _courseRepository.GetCourseAsync(courseId);
             if (course is null)
             {
+                _logger.LogWarning("Course with id:{Id} Not Found", courseId);
                 return NotFound();
             }
 
@@ -125,12 +129,14 @@ namespace SchoolAPI.Controllers
 
             if (existingLesson is null)
             {
+                _logger.LogWarning("Lesson with id:{Id} Not Found", id);
                 return NotFound();
             }
 
             var existingCourse = await _courseRepository.GetCourseAsync(lessonDto.CourseId);
             if (existingCourse is null)
             {
+                _logger.LogWarning("Course with id:{Id} Not Found", lessonDto.CourseId);
                 return NotFound();
             }
 
@@ -194,6 +200,7 @@ namespace SchoolAPI.Controllers
 
             if (existingLesson is null)
             {
+                _logger.LogWarning("Lesson with id:{Id} Not Found", id);
                 return NotFound();
             }
 

@@ -9,9 +9,11 @@ namespace SchoolAPI.Controllers
     public class TeachersController : ControllerBase
     {
         private readonly ITeacherRepository _repository;
-        public TeachersController(ITeacherRepository repository)
+        private readonly ILogger<TeachersController> _logger;
+        public TeachersController(ITeacherRepository repository, ILogger<TeachersController> logger)
         {
             _repository = repository;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -30,6 +32,7 @@ namespace SchoolAPI.Controllers
 
             if (teacher is null)
             {
+                _logger.LogWarning("Teacher with id:{Id} Not Found", id);
                 return NotFound();
             }
 
@@ -59,6 +62,7 @@ namespace SchoolAPI.Controllers
 
             if (existingTeacher is null)
             {
+                _logger.LogWarning("Teacher with id:{Id} Not Found", id);
                 return NotFound();
             }
 
@@ -78,6 +82,7 @@ namespace SchoolAPI.Controllers
 
             if (existingTeacher is null)
             {
+                _logger.LogWarning("Teacher with id:{Id} Not Found", id);
                 return NotFound();
             }
 
