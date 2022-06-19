@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using SchoolAPI.Models;
 
 namespace SchoolAPI.Data
@@ -6,13 +7,24 @@ namespace SchoolAPI.Data
     public class TeacherRepository : ITeacherRepository
     {
         private readonly SchoolContext _context;
-        public TeacherRepository(SchoolContext context)
+        private readonly IMemoryCache _memoryCache;
+        public TeacherRepository(SchoolContext context, IMemoryCache memoryCache)
         {
             _context = context;
+            _memoryCache = memoryCache;
         }
         public async Task<IEnumerable<Teacher>> GetTeachersAsync()
         {
-            return await _context.Teachers.ToListAsync();
+            if (!_memoryCache.TryGetValue(CacheKeys.Teachers, out List<Teacher> teacherList))
+            {
+                teacherList = await _context.Teachers.AsNoTracking().ToListAsync();
+
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(60));
+
+                _memoryCache.Set(CacheKeys.Teachers, teacherList, cacheEntryOptions);
+            }
+            return teacherList;
         }
 
         public async Task<Teacher> GetTeacherAsync(int teacherId)
@@ -25,6 +37,7 @@ namespace SchoolAPI.Data
             teacher.BirthDate = new DateTime(teacher.BirthDate.Year,teacher.BirthDate.Month,teacher.BirthDate.Day);
             var result = await _context.Teachers.AddAsync(teacher);
             await _context.SaveChangesAsync();
+            _memoryCache.Remove(CacheKeys.Teachers);
             return result.Entity;
         }
 
@@ -37,6 +50,7 @@ namespace SchoolAPI.Data
             result.BirthDate = teacher.BirthDate;
 
             await _context.SaveChangesAsync();
+            _memoryCache.Remove(CacheKeys.Teachers);
 
             return result;
         }
@@ -46,6 +60,7 @@ namespace SchoolAPI.Data
             var result = await _context.Teachers.FirstOrDefaultAsync(t => t.Id == teacherId);
             _context.Teachers.Remove(result);
             await _context.SaveChangesAsync();
+            _memoryCache.Remove(CacheKeys.Teachers);
         }
     }
 }

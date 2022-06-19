@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using SchoolAPI.Models;
 
 namespace SchoolAPI.Data
@@ -6,13 +7,24 @@ namespace SchoolAPI.Data
     public class LessonRepository : ILessonRepository
     {
         private readonly SchoolContext _context;
-        public LessonRepository(SchoolContext context)
+        private readonly IMemoryCache _memoryCache;
+        public LessonRepository(SchoolContext context, IMemoryCache memoryCache)
         {
             _context = context;
+            _memoryCache = memoryCache;
         }
         public async Task<IEnumerable<Lesson>> GetLessonsAsync()
         {
-            return await _context.Lessons.AsNoTracking().Include(l => l.Course).ToListAsync();
+            if (!_memoryCache.TryGetValue(CacheKeys.Lessons, out List<Lesson> lessonList))
+            {
+                lessonList = await _context.Lessons.AsNoTracking().Include(l => l.Course).ToListAsync();
+
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(60));
+
+                _memoryCache.Set(CacheKeys.Lessons, lessonList, cacheEntryOptions);
+            }
+            return lessonList;
         }
 
         public async Task<Lesson> GetLessonAsync(int lessonId)
@@ -47,6 +59,7 @@ namespace SchoolAPI.Data
             result.Course = lesson.Course;
 
             await _context.SaveChangesAsync();
+            _memoryCache.Remove(CacheKeys.Lessons);
 
             return result;
 
@@ -56,6 +69,7 @@ namespace SchoolAPI.Data
             var result = await _context.Lessons.FirstOrDefaultAsync(l => l.Id == lessonId);
             _context.Lessons.Remove(result);
             await _context.SaveChangesAsync();
+            _memoryCache.Remove(CacheKeys.Lessons);
         }
 
         public async Task<IEnumerable<Lesson>> GetCourseLessonsAsync(int courseId)
@@ -78,6 +92,7 @@ namespace SchoolAPI.Data
             }
 
             await _context.SaveChangesAsync();
+            _memoryCache.Remove(CacheKeys.Lessons);
 
             var newTimes = course.Lessons.Select(l => l.Time).Intersect(lessons.Select(n => n.Time));
             return course.Lessons.Where(l => newTimes.Contains(l.Time));

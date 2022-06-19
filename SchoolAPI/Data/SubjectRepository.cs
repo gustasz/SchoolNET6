@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using SchoolAPI.Models;
 
 namespace SchoolAPI.Data
@@ -6,13 +7,24 @@ namespace SchoolAPI.Data
     public class SubjectRepository : ISubjectRepository
     {
         private readonly SchoolContext _context;
-        public SubjectRepository(SchoolContext context)
+        private readonly IMemoryCache _memoryCache;
+        public SubjectRepository(SchoolContext context, IMemoryCache memoryCache)
         {
             _context = context;
+            _memoryCache = memoryCache;
         }
         public async Task<IEnumerable<Subject>> GetSubjectsAsync()
         {
-            return await _context.Subjects.ToListAsync();
+            if (!_memoryCache.TryGetValue(CacheKeys.Subjects, out List<Subject> subjectList))
+            {
+                subjectList = await _context.Subjects.AsNoTracking().ToListAsync();
+
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(60));
+
+                _memoryCache.Set(CacheKeys.Subjects, subjectList, cacheEntryOptions);
+            }
+            return subjectList;
         }
 
         public async Task<Subject> GetSubjectAsync(int subjectId)
@@ -24,6 +36,7 @@ namespace SchoolAPI.Data
         {
             var result = await _context.Subjects.AddAsync(subject);
             await _context.SaveChangesAsync();
+            _memoryCache.Remove(CacheKeys.Subjects);
             return result.Entity;
         }
 
@@ -34,6 +47,7 @@ namespace SchoolAPI.Data
             result.Name = subject.Name;
 
             await _context.SaveChangesAsync();
+            _memoryCache.Remove(CacheKeys.Subjects);
             return result;
 
         }
@@ -43,6 +57,7 @@ namespace SchoolAPI.Data
             var result = await _context.Subjects.FirstOrDefaultAsync(s => s.Id == subjectId);
             _context.Subjects.Remove(result);
             await _context.SaveChangesAsync();
+            _memoryCache.Remove(CacheKeys.Subjects);
         }
     }
 }
