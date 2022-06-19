@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using SchoolAPI.Models;
 
 namespace SchoolAPI.Data
@@ -6,13 +7,24 @@ namespace SchoolAPI.Data
     public class StudentRepository : IStudentRepository
     {
         private readonly SchoolContext _context;
-        public StudentRepository(SchoolContext context)
+        private readonly IMemoryCache _memoryCache;
+        public StudentRepository(SchoolContext context, IMemoryCache memoryCache)
         {
             _context = context;
+            _memoryCache = memoryCache;
         }
         public async Task<IEnumerable<Student>> GetStudentsAsync()
         {
-            return await _context.Students.AsNoTracking().ToListAsync();
+            if (!_memoryCache.TryGetValue(CacheKeys.Students, out List<Student> studentList))
+            {
+                studentList = await _context.Students.AsNoTracking().ToListAsync();
+
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(60));
+
+                _memoryCache.Set(CacheKeys.Students, studentList, cacheEntryOptions);
+            }
+            return studentList;
         }
 
         public async Task<Student> GetStudentAsync(int studentId)
@@ -24,6 +36,7 @@ namespace SchoolAPI.Data
         {
             var result = await _context.Students.AddAsync(student);
             await _context.SaveChangesAsync();
+            _memoryCache.Remove(CacheKeys.Students);
             return result.Entity;
         }
 
@@ -37,6 +50,7 @@ namespace SchoolAPI.Data
             result.Grade = student.Grade;
 
             await _context.SaveChangesAsync();
+            _memoryCache.Remove(CacheKeys.Students);
 
             return result;
 
@@ -47,6 +61,7 @@ namespace SchoolAPI.Data
             var result = await _context.Students.FirstOrDefaultAsync(s => s.Id == studentId);
             _context.Students.Remove(result);
             await _context.SaveChangesAsync();
+            _memoryCache.Remove(CacheKeys.Students);
         }
 
         public async Task<IEnumerable<Course>> GetStudentCoursesAsync(int studentId)
