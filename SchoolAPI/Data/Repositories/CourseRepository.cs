@@ -1,19 +1,27 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using SchoolAPI.Data.Repositories;
 using SchoolAPI.Models;
 
 namespace SchoolAPI.Data
 {
-    public class CourseRepository : ICourseRepository
+    public class CourseRepository : GenericRepository<Course>, ICourseRepository
     {
-        private readonly SchoolContext _context;
-        private readonly IMemoryCache _memoryCache;
-        public CourseRepository(SchoolContext context, IMemoryCache memoryCache)
+
+        public CourseRepository(SchoolContext _context) : base(_context) { }
+
+        public new async Task<IEnumerable<Course>> GetAllAsync()
         {
-            _context = context;
-            _memoryCache = memoryCache;
+            var courseList = await _context.Courses.AsNoTracking().Include(c => c.Subject).Include(c => c.Teacher).Include(c => c.Students).Include(c => c.Lessons).ToListAsync();
+            return courseList;
         }
-        public async Task<IEnumerable<Course>> GetCoursesAsync()
+
+        public new async Task<Course> GetByIdAsync(int id)
+        {
+            return await _context.Courses.AsNoTracking().Include(c => c.Subject).Include(c => c.Teacher).Include(c => c.Students).Include(c => c.Lessons).FirstOrDefaultAsync(c => c.Id == id);
+        }
+
+        /*public async Task<IEnumerable<Course>> GetCoursesAsync()
         {
             if (!_memoryCache.TryGetValue(CacheKeys.Courses, out List<Course> courseList))
             {
@@ -59,7 +67,7 @@ namespace SchoolAPI.Data
             _context.Courses.Remove(result);
             await _context.SaveChangesAsync();
             _memoryCache.Remove(CacheKeys.Courses);
-        }
+        }*/
 
         public async Task<IEnumerable<Student>> GetCourseStudentsAsync(int courseId)
         {

@@ -1,19 +1,21 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using SchoolAPI.Data.Repositories;
 using SchoolAPI.Models;
 
 namespace SchoolAPI.Data
 {
-    public class TeacherRepository : ITeacherRepository
+    public class TeacherRepository : GenericRepository<Teacher>, ITeacherRepository
     {
-        private readonly SchoolContext _context;
+        public TeacherRepository(SchoolContext _context) : base(_context) { }
+       /* private readonly SchoolContext _context;
         private readonly IMemoryCache _memoryCache;
         public TeacherRepository(SchoolContext context, IMemoryCache memoryCache)
         {
             _context = context;
             _memoryCache = memoryCache;
         }
-        public async Task<IEnumerable<Teacher>> GetTeachersAsync()
+        public async Task<IEnumerable<Teacher>> GetTeachersWithInfoAsync()
         {
             if (!_memoryCache.TryGetValue(CacheKeys.Teachers, out List<Teacher> teacherList))
             {
@@ -61,6 +63,6 @@ namespace SchoolAPI.Data
             _context.Teachers.Remove(result);
             await _context.SaveChangesAsync();
             _memoryCache.Remove(CacheKeys.Teachers);
-        }
+        }*/
     }
 }

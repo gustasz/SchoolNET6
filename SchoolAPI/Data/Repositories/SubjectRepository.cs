@@ -1,12 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using SchoolAPI.Data.Repositories;
 using SchoolAPI.Models;
 
 namespace SchoolAPI.Data
 {
-    public class SubjectRepository : ISubjectRepository
+    public class SubjectRepository : GenericRepository<Subject>, ISubjectRepository
     {
-        private readonly SchoolContext _context;
+        public SubjectRepository(SchoolContext context) : base(context) { }
+        /*private readonly SchoolContext _context;
         private readonly IMemoryCache _memoryCache;
         public SubjectRepository(SchoolContext context, IMemoryCache memoryCache)
         {
@@ -58,6 +60,6 @@ namespace SchoolAPI.Data
             _context.Subjects.Remove(result);
             await _context.SaveChangesAsync();
             _memoryCache.Remove(CacheKeys.Subjects);
-        }
+        }*/
     }
 }

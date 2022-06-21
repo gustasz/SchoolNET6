@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SchoolAPI.Data;
+using SchoolAPI.Data.Interfaces;
 using SchoolAPI.Models;
 
 namespace SchoolAPI.Controllers
@@ -8,23 +9,21 @@ namespace SchoolAPI.Controllers
     [ApiController]
     public class LessonsController : ControllerBase
     {
-        private readonly ILessonRepository _repository;
-        private readonly ICourseRepository _courseRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<LessonsController> _logger;
 
         public static readonly TimeOnly[] LessonTimes = { // Lessons can only start at predetermined times by school. For example, 5th lesson of the day can only start at 12:00
             new TimeOnly(8,0), new TimeOnly(8,55),new TimeOnly(9,50),new TimeOnly(10,55),new TimeOnly(12,0),new TimeOnly(12,55),new TimeOnly(13,50),new TimeOnly(14,45)};
-        public LessonsController(ILessonRepository repository, ICourseRepository courseRepository, ILogger<LessonsController> logger)
+        public LessonsController(IUnitOfWork unitOfWork, ILogger<LessonsController> logger)
         {
-            _repository = repository;
-            _courseRepository = courseRepository;
+            _unitOfWork = unitOfWork;
             _logger = logger;
         }
 
         [HttpGet]
         public async Task<IEnumerable<LessonDto>> GetLessonsAsync()
         {
-            var lessons = (await _repository.GetLessonsAsync())
+            var lessons = (await _unitOfWork.Lesson.GetAllAsync())
                             .Select(lesson => lesson.AsDto());
             return lessons;
         }
@@ -32,7 +31,7 @@ namespace SchoolAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<LessonDto>> GetLessonAsync(int id)
         {
-            var lesson = await _repository.GetLessonAsync(id);
+            var lesson = await _unitOfWork.Lesson.GetByIdAsync(id);
 
             if (lesson is null)
             {
@@ -46,7 +45,7 @@ namespace SchoolAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<LessonDto>> AddLessonsAsync(CreateLessonShortDto[] lessonsDto, int courseId)
         {
-            var course = await _courseRepository.GetCourseAsync(courseId);
+            var course = await _unitOfWork.Course.GetByIdAsync(courseId);
             if (course is null)
             {
                 _logger.LogWarning("Course with id:{Id} Not Found", courseId);
@@ -73,7 +72,7 @@ namespace SchoolAPI.Controllers
                 return BadRequest($"Trying to include lesson(s) on a weekend: {weekendString}");
             }
 
-            var currentLessons = await _repository.GetCourseLessonsAsync(courseId);
+            var currentLessons = await _unitOfWork.Lesson.GetCourseLessonsAsync(courseId);
             var currentLessonTimes = currentLessons.Select(l => l.Time);
             var lessonOverlap = currentLessonTimes.Where(l => newLessonTimes.Contains(l)).ToList();
             if (lessonOverlap.Any())
@@ -83,11 +82,11 @@ namespace SchoolAPI.Controllers
             }
 
             // check for student schedule overlap (there must be a better way to do this)
-            var courseStudents = await _courseRepository.GetCourseStudentsAsync(courseId);
+            var courseStudents = await _unitOfWork.Course.GetCourseStudentsAsync(courseId);
             var allStudentLessonTimes = new List<DateTime>();
             foreach (var student in courseStudents)
             {
-                var studentLessons = await _repository.GetStudentLessonsAsync(student.Id);
+                var studentLessons = await _unitOfWork.Lesson.GetStudentLessonsAsync(student.Id);
                 foreach (var lesson in studentLessons)
                 {
                     if (!allStudentLessonTimes.Contains(lesson.Time))
@@ -105,7 +104,7 @@ namespace SchoolAPI.Controllers
 
             // check for teacher schedule overlap (there must be a better way to do this)
             var allTeacherLessonTimes = new List<DateTime>();
-            var teacherLessons = await _repository.GetTeacherLessonsAsync(course.Teacher.Id);
+            var teacherLessons = await _unitOfWork.Lesson.GetTeacherLessonsAsync(course.Teacher.Id);
             foreach (var lesson in teacherLessons)
             {
                 allTeacherLessonTimes.Add(lesson.Time);
@@ -117,7 +116,8 @@ namespace SchoolAPI.Controllers
                 return BadRequest($"Schedule overlap for teacher: {oLessons}"); // return course too?
             }
 
-            var result = await _repository.CreateLessonsForCourseAsync(lessons);
+            var result = await _unitOfWork.Lesson.CreateLessonsForCourseAsync(lessons);
+            await _unitOfWork.CompleteAsync();
 
             return CreatedAtAction("GetLessons", null, result.ToList().AsDtos());
         }
@@ -125,7 +125,7 @@ namespace SchoolAPI.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<LessonDto>> UpdateLessonAsync(int id, UpdateLessonDto lessonDto)
         {
-            var existingLesson = await _repository.GetLessonAsync(id);
+            var existingLesson = await _unitOfWork.Lesson.GetByIdAsync(id);
 
             if (existingLesson is null)
             {
@@ -133,7 +133,7 @@ namespace SchoolAPI.Controllers
                 return NotFound();
             }
 
-            var existingCourse = await _courseRepository.GetCourseAsync(lessonDto.CourseId);
+            var existingCourse = await _unitOfWork.Course.GetByIdAsync(lessonDto.CourseId);
             if (existingCourse is null)
             {
                 _logger.LogWarning("Course with id:{Id} Not Found", lessonDto.CourseId);
@@ -150,7 +150,7 @@ namespace SchoolAPI.Controllers
             existingLesson.Course = new() { Id = lessonDto.CourseId };
             existingLesson.Time = new DateTime(lessonDto.DayDate.Year, lessonDto.DayDate.Month, lessonDto.DayDate.Day, lessonTime.Hour, lessonTime.Minute, 0);
 
-            var currentLessons = await _repository.GetCourseLessonsAsync(lessonDto.CourseId);
+            var currentLessons = await _unitOfWork.Lesson.GetCourseLessonsAsync(lessonDto.CourseId);
             var currentLessonTimes = currentLessons.Select(l => l.Time);
             if (currentLessonTimes.Any(l => l == existingLesson.Time))
             {
@@ -158,11 +158,11 @@ namespace SchoolAPI.Controllers
             }
 
             // check for student schedule overlap (there must be a better way to do this)
-            var courseStudents = await _courseRepository.GetCourseStudentsAsync(lessonDto.CourseId);
+            var courseStudents = await _unitOfWork.Course.GetCourseStudentsAsync(lessonDto.CourseId);
             var allStudentLessonTimes = new List<DateTime>();
             foreach (var student in courseStudents)
             {
-                var studentLessons = await _repository.GetStudentLessonsAsync(student.Id);
+                var studentLessons = await _unitOfWork.Lesson.GetStudentLessonsAsync(student.Id);
                 foreach (var lesson in studentLessons)
                 {
                     if (!allStudentLessonTimes.Contains(lesson.Time))
@@ -178,7 +178,7 @@ namespace SchoolAPI.Controllers
 
             // check for teacher schedule overlap (there must be a better way to do this)
             var allTeacherLessonTimes = new List<DateTime>();
-            var teacherLessons = await _repository.GetTeacherLessonsAsync(existingCourse.Teacher.Id);
+            var teacherLessons = await _unitOfWork.Lesson.GetTeacherLessonsAsync(existingCourse.Teacher.Id);
             foreach (var lesson in teacherLessons)
             {
                 allTeacherLessonTimes.Add(lesson.Time);
@@ -188,7 +188,8 @@ namespace SchoolAPI.Controllers
                 return BadRequest($"Schedule overlap for teacher: {existingLesson.Time}"); // return course too?
             }
 
-            await _repository.UpdateLessonAsync(existingLesson);
+            await _unitOfWork.Lesson.UpdateAsync(existingLesson);
+            await _unitOfWork.CompleteAsync();
 
             return NoContent();
         }
@@ -196,7 +197,7 @@ namespace SchoolAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteLessonAsync(int id)
         {
-            var existingLesson = await _repository.GetLessonAsync(id);
+            var existingLesson = await _unitOfWork.Lesson.GetByIdAsync(id);
 
             if (existingLesson is null)
             {
@@ -204,7 +205,8 @@ namespace SchoolAPI.Controllers
                 return NotFound();
             }
 
-            await _repository.DeleteLessonAsync(id);
+            await _unitOfWork.Lesson.RemoveAsync(id);
+            await _unitOfWork.CompleteAsync();
 
             return NoContent();
         }
@@ -212,7 +214,7 @@ namespace SchoolAPI.Controllers
         [HttpGet("course/{courseId}")]
         public async Task<IEnumerable<LessonDto>> GetCourseLessonsAsync(int courseId)
         {
-            var lessons = (await _repository.GetCourseLessonsAsync(courseId))
+            var lessons = (await _unitOfWork.Lesson.GetCourseLessonsAsync(courseId))
                 .Select(lesson => lesson.AsDto());
             return lessons;
         }
@@ -220,7 +222,7 @@ namespace SchoolAPI.Controllers
         [HttpGet("student/{studentId}")]
         public async Task<IEnumerable<LessonDto>> GetStudentLessonsAsync(int studentId)
         {
-            var lessons = (await _repository.GetStudentLessonsAsync(studentId))
+            var lessons = (await _unitOfWork.Lesson.GetStudentLessonsAsync(studentId))
                 .Select(lesson => lesson.AsDto());
             return lessons;
         }
@@ -228,7 +230,7 @@ namespace SchoolAPI.Controllers
         [HttpGet("student/{studentId}/day")]
         public async Task<IEnumerable<LessonDto>> GetStudentLessonsForDayAsync(int studentId, DateTime dayDate)
         {
-            var lessons = (await _repository.GetStudentLessonsAsync(studentId));
+            var lessons = (await _unitOfWork.Lesson.GetStudentLessonsAsync(studentId));
             var dayLessons = lessons.Where(l => l.Time.Date == dayDate.Date).OrderBy(l => l.Time);
             return dayLessons.Select(lesson => lesson.AsDto());
         }
@@ -236,7 +238,7 @@ namespace SchoolAPI.Controllers
         [HttpGet("teacher/{teacherId}")]
         public async Task<IEnumerable<LessonDto>> GetTeacherLessonsAsync(int teacherId)
         {
-            var lessons = (await _repository.GetTeacherLessonsAsync(teacherId))
+            var lessons = (await _unitOfWork.Lesson.GetTeacherLessonsAsync(teacherId))
                 .Select(lesson => lesson.AsDto());
             return lessons;
         }
@@ -244,7 +246,7 @@ namespace SchoolAPI.Controllers
         [HttpGet("teacher/{teacherId}/day")]
         public async Task<IEnumerable<LessonDto>> GetTeacherLessonsForDayAsync(int teacherId, DateTime dayDate)
         {
-            var lessons = (await _repository.GetTeacherLessonsAsync(teacherId));
+            var lessons = (await _unitOfWork.Lesson.GetTeacherLessonsAsync(teacherId));
             var dayLessons = lessons.Where(l => l.Time.Date == dayDate.Date).OrderBy(l => l.Time);
             return dayLessons.Select(lesson => lesson.AsDto());
         }

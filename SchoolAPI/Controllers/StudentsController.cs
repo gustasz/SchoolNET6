@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SchoolAPI.Data;
+using SchoolAPI.Data.Interfaces;
 using SchoolAPI.Models;
 
 namespace SchoolAPI.Controllers
@@ -8,22 +9,18 @@ namespace SchoolAPI.Controllers
     [ApiController]
     public class StudentsController : ControllerBase
     {
-        private readonly IStudentRepository _repository;
-        private readonly ICourseRepository _courseRepository;
-        private readonly ILessonRepository _lessonRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<StudentsController> _logger;
-        public StudentsController(IStudentRepository repository, ICourseRepository courseRepository, ILessonRepository lessonRepository, ILogger<StudentsController> logger)
+        public StudentsController(IUnitOfWork unitOfWork, ILogger<StudentsController> logger)
         {
-            _repository = repository;
-            _courseRepository = courseRepository;
-            _lessonRepository = lessonRepository;
+            _unitOfWork = unitOfWork;
             _logger = logger;
         }
 
         [HttpGet]
         public async Task<IEnumerable<StudentDto>> GetStudentsAsync()
         {
-            var students = (await _repository.GetStudentsAsync())
+            var students = (await _unitOfWork.Student.GetAllAsync())
                             .Select(student => student.AsDto());
             return students;
 
@@ -32,7 +29,7 @@ namespace SchoolAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<StudentDto>> GetStudentAsync(int id)
         {
-            var student = await _repository.GetStudentAsync(id);
+            var student = await _unitOfWork.Student.GetByIdAsync(id);
 
             if (student is null)
             {
@@ -57,7 +54,8 @@ namespace SchoolAPI.Controllers
 
             student.BirthDate = new DateTime(student.BirthDate.Year, student.BirthDate.Month, student.BirthDate.Day);
 
-            var result = await _repository.AddStudentAsync(student);
+            var result = await _unitOfWork.Student.AddAsync(student);
+            await _unitOfWork.CompleteAsync();
 
             return CreatedAtAction("GetStudent", new { id = result.Id }, result.AsDto());
         }
@@ -65,7 +63,7 @@ namespace SchoolAPI.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<StudentDto>> UpdateStudentAsync(int id, UpdateStudentDto studentDto)
         {
-            var existingStudent = await _repository.GetStudentAsync(id);
+            var existingStudent = await _unitOfWork.Student.GetByIdAsync(id);
 
             if (existingStudent is null)
             {
@@ -79,7 +77,8 @@ namespace SchoolAPI.Controllers
             existingStudent.Grade = studentDto.Grade;
             existingStudent.Class = studentDto.Class;
 
-            await _repository.UpdateStudentAsync(existingStudent);
+            await _unitOfWork.Student.UpdateAsync(existingStudent);
+            await _unitOfWork.CompleteAsync();
 
             return NoContent();
         }
@@ -87,7 +86,7 @@ namespace SchoolAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteStudentAsync(int id)
         {
-            var existingStudent = await _repository.GetStudentAsync(id);
+            var existingStudent = await _unitOfWork.Student.GetByIdAsync(id);
 
             if (existingStudent is null)
             {
@@ -95,7 +94,8 @@ namespace SchoolAPI.Controllers
                 return NotFound();
             }
 
-            await _repository.DeleteStudentAsync(id);
+            await _unitOfWork.Student.RemoveAsync(id);
+            await _unitOfWork.CompleteAsync();
 
             return NoContent();
         }
@@ -104,14 +104,14 @@ namespace SchoolAPI.Controllers
         [HttpGet("{studentId}/courses")]
         public async Task<ActionResult<IEnumerable<CourseDto>>> GetStudentCoursesAsync(int studentId)
         {
-            var student = await _repository.GetStudentAsync(studentId);
+            var student = await _unitOfWork.Student.GetByIdAsync(studentId);
             if (student is null)
             {
                 _logger.LogWarning("Student with id:{Id} Not Found", studentId);
                 return NotFound();
             }
 
-            var courses = (await _repository.GetStudentCoursesAsync(studentId))
+            var courses = (await _unitOfWork.Student.GetStudentCoursesAsync(studentId))
                             .Select(course => course.AsDto());
             return Ok(courses);
         }
@@ -120,14 +120,14 @@ namespace SchoolAPI.Controllers
         [HttpPut("{studentId}/courses/{courseId}")]
         public async Task<ActionResult<StudentDto>> AddCourseToStudentAsync(int studentId, int courseId)
         {
-            var student = await _repository.GetStudentAsync(studentId);
+            var student = await _unitOfWork.Student.GetByIdAsync(studentId);
             if (student is null)
             {
                 _logger.LogWarning("Student with id:{Id} Not Found", studentId);
                 return NotFound();
             }
 
-            var course = await _courseRepository.GetCourseAsync(courseId);
+            var course = await _unitOfWork.Course.GetByIdAsync(courseId);
             if (course is null)
             {
                 _logger.LogWarning("Course with id:{Id} Not Found", courseId);
@@ -144,15 +144,15 @@ namespace SchoolAPI.Controllers
                 return BadRequest($"Trying to add a student in {student.Class} class into a {course.ForClass} only course.");
             }
 
-            var courseStudents = await _courseRepository.GetCourseStudentsAsync(courseId);
+            var courseStudents = await _unitOfWork.Course.GetCourseStudentsAsync(courseId);
             if (courseStudents.Any(s => s.Id == studentId))
             {
                 return BadRequest("Course already has the student assigned.");
             }
 
             // check for schedule overlap
-            var studentLessonsTimes = (await _lessonRepository.GetStudentLessonsAsync(studentId)).Select(l => l.Time);
-            var courseLessonsTimes = (await _lessonRepository.GetCourseLessonsAsync(courseId)).Select(l => l.Time);
+            var studentLessonsTimes = (await _unitOfWork.Lesson.GetStudentLessonsAsync(studentId)).Select(l => l.Time);
+            var courseLessonsTimes = (await _unitOfWork.Lesson.GetCourseLessonsAsync(courseId)).Select(l => l.Time);
 
             var overlapTimes = studentLessonsTimes.Intersect(courseLessonsTimes);
             if (overlapTimes.Any())
@@ -161,7 +161,7 @@ namespace SchoolAPI.Controllers
                 return BadRequest($"Schedule overlap: {overlapStrings}");
             }
 
-            await _repository.AddCourseToStudentAsync(studentId, courseId);
+            await _unitOfWork.Student.AddCourseToStudentAsync(studentId, courseId);
 
             return NoContent();
         }
@@ -170,14 +170,14 @@ namespace SchoolAPI.Controllers
         [HttpDelete("{studentId}/courses/{courseId}")]
         public async Task<ActionResult> DeleteStudentFromCourseAsync(int studentId, int courseId)
         {
-            var student = await _repository.GetStudentAsync(studentId);
+            var student = await _unitOfWork.Student.GetByIdAsync(studentId);
             if (student is null)
             {
                 _logger.LogWarning("Student with id:{Id} Not Found", studentId);
                 return NotFound();
             }
 
-            var course = await _courseRepository.GetCourseAsync(courseId);
+            var course = await _unitOfWork.Course.GetByIdAsync(courseId);
             if (course is null)
             {
                 _logger.LogWarning("Course with id:{Id} Not Found", courseId);
@@ -190,7 +190,7 @@ namespace SchoolAPI.Controllers
                 return NotFound();
             }
 
-            await _repository.DeleteCourseFromStudentAsync(studentId, courseId);
+            await _unitOfWork.Student.DeleteCourseFromStudentAsync(studentId, courseId);
 
             return NoContent();
         }
@@ -199,7 +199,7 @@ namespace SchoolAPI.Controllers
         [HttpGet("grade/{gradeId}/class/{classId}")]
         public async Task<ActionResult<IEnumerable<StudentDto>>> GetStudentsFromClassAsync(int gradeId, int classId)
         {
-            var students = (await _repository.GetStudentsFromClassAsync(gradeId,classId))
+            var students = (await _unitOfWork.Student.GetStudentsFromClassAsync(gradeId,classId))
                             .Select(student => student.AsDto());
             return Ok(students);
         }
