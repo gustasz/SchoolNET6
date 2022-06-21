@@ -1,68 +1,69 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using SchoolAPI.Data.Repositories;
 using SchoolAPI.Models;
 
 namespace SchoolAPI.Data
 {
-    public class StudentRepository : IStudentRepository
+    public class StudentRepository : GenericRepository<Student>, IStudentRepository
     {
-        private readonly SchoolContext _context;
-        private readonly IMemoryCache _memoryCache;
-        public StudentRepository(SchoolContext context, IMemoryCache memoryCache)
-        {
-            _context = context;
-            _memoryCache = memoryCache;
-        }
-        public async Task<IEnumerable<Student>> GetStudentsAsync()
-        {
-            if (!_memoryCache.TryGetValue(CacheKeys.Students, out List<Student> studentList))
-            {
-                studentList = await _context.Students.AsNoTracking().ToListAsync();
+        public StudentRepository(SchoolContext _context) : base(_context) { }
 
-                var cacheEntryOptions = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromSeconds(60));
-
-                _memoryCache.Set(CacheKeys.Students, studentList, cacheEntryOptions);
-            }
-            return studentList;
+        public new async Task<Student> GetByIdAsync(int id)
+        {
+            return await _context.Students.AsNoTracking().Include(s => s.Courses).FirstOrDefaultAsync(s => s.Id == id);
         }
 
-        public async Task<Student> GetStudentAsync(int studentId)
-        {
-            return await _context.Students.AsNoTracking().Include(s => s.Courses).FirstOrDefaultAsync(s => s.Id == studentId);
-        }
+        /* public async Task<IEnumerable<Student>> GetStudentsAsync()
+         {
+             if (!_memoryCache.TryGetValue(CacheKeys.Students, out List<Student> studentList))
+             {
+                 studentList = await _context.Students.AsNoTracking().ToListAsync();
 
-        public async Task<Student> AddStudentAsync(Student student)
-        {
-            var result = await _context.Students.AddAsync(student);
-            await _context.SaveChangesAsync();
-            _memoryCache.Remove(CacheKeys.Students);
-            return result.Entity;
-        }
+                 var cacheEntryOptions = new MemoryCacheEntryOptions()
+                 .SetAbsoluteExpiration(TimeSpan.FromSeconds(60));
 
-        public async Task<Student> UpdateStudentAsync(Student student)
-        {
-            var result = await _context.Students.FirstOrDefaultAsync(s => s.Id == student.Id);
+                 _memoryCache.Set(CacheKeys.Students, studentList, cacheEntryOptions);
+             }
+             return studentList;
+         }
 
-            result.FirstName = student.FirstName;
-            result.LastName = student.LastName;
-            result.BirthDate = student.BirthDate;
-            result.Grade = student.Grade;
+         public async Task<Student> GetStudentAsync(int studentId)
+         {
+             return await _context.Students.AsNoTracking().Include(s => s.Courses).FirstOrDefaultAsync(s => s.Id == studentId);
+         }
 
-            await _context.SaveChangesAsync();
-            _memoryCache.Remove(CacheKeys.Students);
+         public async Task<Student> AddStudentAsync(Student student)
+         {
+             var result = await _context.Students.AddAsync(student);
+             await _context.SaveChangesAsync();
+             _memoryCache.Remove(CacheKeys.Students);
+             return result.Entity;
+         }
 
-            return result;
+         public async Task<Student> UpdateStudentAsync(Student student)
+         {
+             var result = await _context.Students.FirstOrDefaultAsync(s => s.Id == student.Id);
 
-        }
+             result.FirstName = student.FirstName;
+             result.LastName = student.LastName;
+             result.BirthDate = student.BirthDate;
+             result.Grade = student.Grade;
 
-        public async Task DeleteStudentAsync(int studentId)
-        {
-            var result = await _context.Students.FirstOrDefaultAsync(s => s.Id == studentId);
-            _context.Students.Remove(result);
-            await _context.SaveChangesAsync();
-            _memoryCache.Remove(CacheKeys.Students);
-        }
+             await _context.SaveChangesAsync();
+             _memoryCache.Remove(CacheKeys.Students);
+
+             return result;
+
+         }
+
+         public async Task DeleteStudentAsync(int studentId)
+         {
+             var result = await _context.Students.FirstOrDefaultAsync(s => s.Id == studentId);
+             _context.Students.Remove(result);
+             await _context.SaveChangesAsync();
+             _memoryCache.Remove(CacheKeys.Students);
+         }*/
 
         public async Task<IEnumerable<Course>> GetStudentCoursesAsync(int studentId)
         {

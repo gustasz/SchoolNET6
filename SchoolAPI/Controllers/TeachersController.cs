@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SchoolAPI.Data;
+using SchoolAPI.Data.Interfaces;
 using SchoolAPI.Models;
 
 namespace SchoolAPI.Controllers
@@ -8,18 +9,18 @@ namespace SchoolAPI.Controllers
     [ApiController]
     public class TeachersController : ControllerBase
     {
-        private readonly ITeacherRepository _repository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<TeachersController> _logger;
-        public TeachersController(ITeacherRepository repository, ILogger<TeachersController> logger)
+        public TeachersController(IUnitOfWork unitOfWork, ILogger<TeachersController> logger)
         {
-            _repository = repository;
+            _unitOfWork = unitOfWork;
             _logger = logger;
         }
 
         [HttpGet]
         public async Task<IEnumerable<TeacherDto>> GetTeachersAsync()
         {
-            var teachers = (await _repository.GetTeachersAsync())
+            var teachers = (await _unitOfWork.Teacher.GetAllAsync())
                             .Select(teacher => teacher.AsDto());
             return teachers;
 
@@ -28,7 +29,7 @@ namespace SchoolAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<TeacherDto>> GetTeacherAsync(int id)
         {
-            var teacher = await _repository.GetTeacherAsync(id);
+            var teacher = await _unitOfWork.Teacher.GetByIdAsync(id);
 
             if (teacher is null)
             {
@@ -50,7 +51,10 @@ namespace SchoolAPI.Controllers
                 BirthDate = teacherDto.BirthDate
             };
 
-            var result = await _repository.AddTeacherAsync(teacher);
+            teacher.BirthDate = new DateTime(teacher.BirthDate.Year, teacher.BirthDate.Month, teacher.BirthDate.Day);
+
+            var result = await _unitOfWork.Teacher.AddAsync(teacher);
+            await _unitOfWork.CompleteAsync();
 
             return CreatedAtAction("GetTeacher", new { id = result.Id }, result.AsDto());
         }
@@ -58,7 +62,7 @@ namespace SchoolAPI.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<TeacherDto>> UpdateTeacherAsync(int id, UpdateTeacherDto teacherDto)
         {
-            var existingTeacher = await _repository.GetTeacherAsync(id);
+            var existingTeacher = await _unitOfWork.Teacher.GetByIdAsync(id);
 
             if (existingTeacher is null)
             {
@@ -68,9 +72,11 @@ namespace SchoolAPI.Controllers
 
             existingTeacher.FirstName = teacherDto.FirstName;
             existingTeacher.LastName = teacherDto.LastName;
-            existingTeacher.BirthDate = teacherDto.BirthDate;
+            //existingTeacher.BirthDate = teacherDto.BirthDate;
+            existingTeacher.BirthDate = new DateTime(teacherDto.BirthDate.Year, teacherDto.BirthDate.Month, teacherDto.BirthDate.Day);
 
-            await _repository.UpdateTeacherAsync(existingTeacher);
+            await _unitOfWork.Teacher.UpdateAsync(existingTeacher);
+            await _unitOfWork.CompleteAsync();
 
             return NoContent();
         }
@@ -78,15 +84,17 @@ namespace SchoolAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteTeacherAsync(int id)
         {
-            var existingTeacher = await _repository.GetTeacherAsync(id);
+            var teacher = await _unitOfWork.Teacher.GetByIdAsync(id);
 
-            if (existingTeacher is null)
+            if (teacher is null)
             {
                 _logger.LogWarning("Teacher with id:{Id} Not Found", id);
                 return NotFound();
             }
 
-            await _repository.DeleteTeacherAsync(id);
+            //await _teacherRepo.RemoveAsync(id);
+            await _unitOfWork.Teacher.RemoveAsync(id);
+            await _unitOfWork.CompleteAsync();
 
             return NoContent();
         }
