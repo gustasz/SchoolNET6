@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using SchoolAPI.Controllers;
 using SchoolAPI.Data;
+using SchoolAPI.Data.Interfaces;
 using SchoolAPI.Models;
 using System;
 using System.Collections.Generic;
@@ -13,14 +14,17 @@ using Xunit;
 namespace SchoolAPI.Tests
 {
     public class LessonsControllerTests
-    {/* TODO
+    {
         private readonly LessonsController _sut;
         private readonly Mock<ILessonRepository> _lessonRepoMock = new();
         private readonly Mock<ICourseRepository> _courseRepoMock = new();
+        private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
         private readonly Mock<ILogger<LessonsController>> _loggerRepoMock = new();
         public LessonsControllerTests()
         {
-            _sut = new LessonsController(_lessonRepoMock.Object, _courseRepoMock.Object, _loggerRepoMock.Object);
+            _unitOfWorkMock.Setup(m => m.Course).Returns(_courseRepoMock.Object);
+            _unitOfWorkMock.Setup(m => m.Lesson).Returns(_lessonRepoMock.Object);
+            _sut = new LessonsController(_unitOfWorkMock.Object, _loggerRepoMock.Object);
         }
 
         [Fact]
@@ -38,7 +42,7 @@ namespace SchoolAPI.Tests
                 new Lesson{Id = 14, Time = DateTime.Parse("2022-06-09 08:00:00")}
             };
 
-            _courseRepoMock.Setup(x => x.GetCourseAsync(courseId)).
+            _courseRepoMock.Setup(x => x.GetByIdAsync(courseId)).
                 ReturnsAsync(course);
             _courseRepoMock.Setup(x => x.GetCourseStudentsAsync(courseId))
                 .ReturnsAsync(courseStudents);
@@ -73,11 +77,11 @@ namespace SchoolAPI.Tests
                 new Lesson{Id = 14, Time = DateTime.Parse("2022-06-09 08:00:00")}
             };
 
-            _courseRepoMock.Setup(x => x.GetCourseAsync(courseId))
+            _courseRepoMock.Setup(x => x.GetByIdAsync(courseId))
                 .ReturnsAsync(course);
             _courseRepoMock.Setup(x => x.GetCourseStudentsAsync(courseId))
                 .ReturnsAsync(courseStudents);
-            _lessonRepoMock.Setup(x => x.GetLessonAsync(lessonId))
+            _lessonRepoMock.Setup(x => x.GetByIdAsync(lessonId))
                 .ReturnsAsync(lesson);
             _lessonRepoMock.Setup(x => x.GetStudentLessonsAsync(4))
                 .ReturnsAsync(studentLessons);
@@ -113,7 +117,7 @@ namespace SchoolAPI.Tests
             };
 
 
-            _courseRepoMock.Setup(x => x.GetCourseAsync(courseId)).
+            _courseRepoMock.Setup(x => x.GetByIdAsync(courseId)).
                 ReturnsAsync(course);
             _courseRepoMock.Setup(x => x.GetCourseStudentsAsync(courseId))
                 .ReturnsAsync(courseStudents);
@@ -157,11 +161,11 @@ namespace SchoolAPI.Tests
                 new Lesson{Id = 19, Time = DateTime.Parse("2022-06-09 08:00:00")}
             };
 
-            _courseRepoMock.Setup(x => x.GetCourseAsync(courseId))
+            _courseRepoMock.Setup(x => x.GetByIdAsync(courseId))
                 .ReturnsAsync(course);
             _courseRepoMock.Setup(x => x.GetCourseStudentsAsync(courseId))
                 .ReturnsAsync(courseStudents);
-            _lessonRepoMock.Setup(x => x.GetLessonAsync(lessonId))
+            _lessonRepoMock.Setup(x => x.GetByIdAsync(lessonId))
                 .ReturnsAsync(lesson);
             _lessonRepoMock.Setup(x => x.GetStudentLessonsAsync(4))
                 .ReturnsAsync(studentLessons);
@@ -174,6 +178,6 @@ namespace SchoolAPI.Tests
             Assert.NotNull(response);
             Assert.IsType<BadRequestObjectResult>(response.Result);
             Assert.StartsWith("Schedule overlap for teacher", (response.Result as ObjectResult)?.Value.ToString());
-        }*/
+        }
     }
 }
