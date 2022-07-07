@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using SchoolAPI.Data;
 using SchoolAPI.Data.Interfaces;
 using SchoolAPI.Models;
@@ -10,21 +11,31 @@ namespace SchoolAPI.Controllers
     public class CoursesController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMemoryCache _memoryCache;
         private readonly ILogger<CoursesController> _logger;
         public CoursesController(IUnitOfWork unitOfWork,
-                                 ILogger<CoursesController> logger)
+                                 ILogger<CoursesController> logger,
+                                 IMemoryCache memoryCache)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _memoryCache = memoryCache;
         }
 
         [HttpGet]
         public async Task<IEnumerable<CourseDto>> GetCoursesAsync()
         {
-            var courses = (await _unitOfWork.Course.GetAllAsync())
+            if (!_memoryCache.TryGetValue(CacheKeys.Courses, out IEnumerable<CourseDto> courses))
+            {
+                courses = (await _unitOfWork.Course.GetAllAsync())
                             .Select(course => course.AsDto());
-            return courses;
 
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(60));
+
+                _memoryCache.Set(CacheKeys.Courses, courses, cacheEntryOptions);
+            }
+            return courses;
         }
 
         [HttpGet("{id}")]
