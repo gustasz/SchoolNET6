@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using SchoolAPI.Data;
 using SchoolAPI.Data.Interfaces;
 using SchoolAPI.Models;
@@ -11,20 +12,31 @@ namespace SchoolAPI.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<LessonsController> _logger;
+        private readonly IMemoryCache _memoryCache;
 
         public static readonly TimeOnly[] LessonTimes = { // Lessons can only start at predetermined times by school. For example, 5th lesson of the day can only start at 12:00
             new TimeOnly(8,0), new TimeOnly(8,55),new TimeOnly(9,50),new TimeOnly(10,55),new TimeOnly(12,0),new TimeOnly(12,55),new TimeOnly(13,50),new TimeOnly(14,45)};
-        public LessonsController(IUnitOfWork unitOfWork, ILogger<LessonsController> logger)
+        public LessonsController(IUnitOfWork unitOfWork, ILogger<LessonsController> logger, IMemoryCache memoryCache)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _memoryCache = memoryCache;
         }
 
         [HttpGet]
         public async Task<IEnumerable<LessonDto>> GetLessonsAsync()
         {
-            var lessons = (await _unitOfWork.Lesson.GetAllAsync())
+            if (!_memoryCache.TryGetValue(CacheKeys.Lessons, out IEnumerable<LessonDto> lessons))
+            {
+                lessons = (await _unitOfWork.Lesson.GetAllAsync())
                             .Select(lesson => lesson.AsDto());
+
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(30));
+
+                _memoryCache.Set(CacheKeys.Lessons, lessons, cacheEntryOptions);
+            }
+
             return lessons;
         }
 

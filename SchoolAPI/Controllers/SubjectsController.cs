@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using SchoolAPI.Data;
 using SchoolAPI.Data.Interfaces;
 using SchoolAPI.Models;
@@ -11,17 +12,27 @@ namespace SchoolAPI.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<SubjectsController> _logger;
-        public SubjectsController(IUnitOfWork unitOfWork, ILogger<SubjectsController> logger)
+        private readonly IMemoryCache _memoryCache;
+        public SubjectsController(IUnitOfWork unitOfWork, ILogger<SubjectsController> logger, IMemoryCache memoryCache)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _memoryCache = memoryCache;
         }
 
         [HttpGet]
         public async Task<IEnumerable<SubjectDto>> GetSubjectsAsync()
         {
-            var subjects = (await _unitOfWork.Subject.GetAllAsync())
+            if (!_memoryCache.TryGetValue(CacheKeys.Subjects, out IEnumerable<SubjectDto> subjects))
+            {
+                subjects = (await _unitOfWork.Subject.GetAllAsync())
                             .Select(subject => subject.AsDto());
+
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(60));
+
+                _memoryCache.Set(CacheKeys.Subjects, subjects, cacheEntryOptions);
+            }
             return subjects;
 
         }
