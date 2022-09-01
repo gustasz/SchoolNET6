@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using SchoolAPI.Data;
 using SchoolAPI.Data.Interfaces;
 using SchoolAPI.Models;
@@ -11,10 +12,12 @@ namespace SchoolAPI.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<StudentsController> _logger;
-        public StudentsController(IUnitOfWork unitOfWork, ILogger<StudentsController> logger)
+        private readonly IMapper _mapper;
+        public StudentsController(IUnitOfWork unitOfWork, ILogger<StudentsController> logger, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _mapper = mapper;
         }
 
         [HttpGet]
@@ -22,6 +25,7 @@ namespace SchoolAPI.Controllers
         {
             var students = (await _unitOfWork.Student.GetAllAsync())
                             .Select(student => student.AsDto());
+                            //.ProjectTo<StudentDto>(_mapper.ConfigurationProvider);
             return students;
 
         }

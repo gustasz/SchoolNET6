@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using SchoolAPI.Data;
 using SchoolAPI.Data.Interfaces;
 using SchoolAPI.Models;
@@ -11,17 +12,19 @@ namespace SchoolAPI.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<SubjectsController> _logger;
-        public SubjectsController(IUnitOfWork unitOfWork, ILogger<SubjectsController> logger)
+        private readonly IMapper _mapper;
+        public SubjectsController(IUnitOfWork unitOfWork, ILogger<SubjectsController> logger, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _mapper = mapper;
         }
 
         [HttpGet]
         public async Task<IEnumerable<SubjectDto>> GetSubjectsAsync()
         {
-            var subjects = (await _unitOfWork.Subject.GetAllAsync())
-                            .Select(subject => subject.AsDto());
+            var subjects = _mapper.Map<IEnumerable<Subject>, IEnumerable<SubjectDto>>(await _unitOfWork.Subject.GetAllAsync());
+                            //.Select(subject => subject.AsDto());
             return subjects;
 
         }
@@ -37,7 +40,7 @@ namespace SchoolAPI.Controllers
                 return NotFound();
             }
 
-            return subject.AsDto();
+            return _mapper.Map<Subject, SubjectDto>(subject);
         }
 
         [HttpPost]
@@ -51,7 +54,7 @@ namespace SchoolAPI.Controllers
             var item = await _unitOfWork.Subject.AddAsync(subject);
             await _unitOfWork.CompleteAsync();
 
-            return CreatedAtAction("GetSubject", new { id = item.Id }, item.AsDto());
+            return CreatedAtAction("GetSubject", new { id = item.Id }, _mapper.Map<Subject, SubjectDto>(item));
         }
 
         [HttpPut("{id}")]

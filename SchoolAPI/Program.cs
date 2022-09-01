@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using SchoolAPI;
 using SchoolAPI.Data;
 using SchoolAPI.Data.Interfaces;
 using SchoolAPI.Data.Repositories;
+using SchoolAPI.Profiles;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,6 +27,8 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
+
+builder.Services.AddAutoMapper(typeof(SubjectProfile), typeof(StudentProfile));
 
 var app = builder.Build();
 
