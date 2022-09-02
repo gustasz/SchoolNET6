@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using SchoolAPI.Controllers;
 using SchoolAPI.Data;
+using SchoolAPI.Data.Interfaces;
 using SchoolAPI.Models;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ using Xunit;
 namespace SchoolAPI.Tests
 {
     public class CoursesControllerTests
-    {/* TODO
+    {
         private readonly CoursesController _sut;
         private readonly Mock<ICourseRepository> _courseRepoMock = new();
         private readonly Mock<ISubjectRepository> _subjectRepoMock = new();
@@ -21,9 +22,15 @@ namespace SchoolAPI.Tests
         private readonly Mock<IStudentRepository> _studentRepoMock = new();
         private readonly Mock<ILessonRepository> _lessonRepoMock = new();
         private readonly Mock<ILogger<CoursesController>> _loggerRepoMock = new();
+        private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
         public CoursesControllerTests()
         {
-            _sut = new CoursesController(_courseRepoMock.Object, _subjectRepoMock.Object, _teacherRepoMock.Object, _studentRepoMock.Object, _lessonRepoMock.Object, _loggerRepoMock.Object);
+            _unitOfWorkMock.Setup(uow => uow.Course).Returns(_courseRepoMock.Object);
+            _unitOfWorkMock.Setup(uow => uow.Subject).Returns(_subjectRepoMock.Object);
+            _unitOfWorkMock.Setup(uow => uow.Teacher).Returns(_teacherRepoMock.Object);
+            _unitOfWorkMock.Setup(uow => uow.Student).Returns(_studentRepoMock.Object);
+            _unitOfWorkMock.Setup(uow => uow.Lesson).Returns(_lessonRepoMock.Object);
+            _sut = new CoursesController(_unitOfWorkMock.Object, _loggerRepoMock.Object);
         }
 
         [Fact]
@@ -35,13 +42,13 @@ namespace SchoolAPI.Tests
             List<Student> students = new() { new Student { Id = 4, Grade = 2, Class = 1} };
 
             var course = new Course { Id = 50, ForGrade = 2, ForClass = 1 };
-            _lessonRepoMock.Setup(x => x.GetStudentLessonsAsync(4))
+            _unitOfWorkMock.Setup(x => x.Lesson.GetStudentLessonsAsync(4))
                 .ReturnsAsync(firstLessons);
-            _lessonRepoMock.Setup(x => x.GetCourseLessonsAsync(50))
+            _unitOfWorkMock.Setup(x => x.Lesson.GetCourseLessonsAsync(50))
                 .ReturnsAsync(courseLessons);
-            _courseRepoMock.Setup(x => x.GetCourseAsync(50))
+            _unitOfWorkMock.Setup(x => x.Course.GetByIdAsync(50))
                 .ReturnsAsync(course);
-            _studentRepoMock.Setup(x => x.GetStudentsFromClassAsync(2,1))
+            _unitOfWorkMock.Setup(x => x.Student.GetStudentsFromClassAsync(2,1))
                 .ReturnsAsync(students);
             // Act
             var studentId = 5;
@@ -50,6 +57,6 @@ namespace SchoolAPI.Tests
             Assert.NotNull(response);
             Assert.IsType<BadRequestObjectResult>(response.Result);
             Assert.StartsWith("Schedule overlap", (response.Result as ObjectResult)?.Value.ToString());
-        }*/
+        }
     }
 }

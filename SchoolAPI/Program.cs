@@ -16,12 +16,17 @@ builder.Services.AddDbContext<SchoolContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
             o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
 builder.Services.AddControllers();
-builder.Services.AddScoped<IStudentRepository, StudentRepository>();
+/*builder.Services.AddScoped<IStudentRepository, StudentRepository>();
 builder.Services.AddScoped<ITeacherRepository, TeacherRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 builder.Services.AddScoped<ISubjectRepository, SubjectRepository>();
 builder.Services.AddScoped<ILessonRepository, LessonRepository>();
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();*/
+builder.Services.Scan(scan =>
+    scan.FromCallingAssembly()
+        .AddClasses()
+        .AsMatchingInterface()
+        .WithScopedLifetime());
 //builder.Services.AddScoped(typeof(IAsyncGenericRepository<>), typeof(GenericRepository<>));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
