@@ -18,6 +18,7 @@ namespace SchoolAPI.Tests
         private readonly LessonsController _sut;
         private readonly Mock<ILessonRepository> _lessonRepoMock = new();
         private readonly Mock<ICourseRepository> _courseRepoMock = new();
+        private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
         private readonly Mock<ILogger<LessonsController>> _loggerRepoMock = new();
         private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
         public LessonsControllerTests()

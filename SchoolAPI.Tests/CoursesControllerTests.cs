@@ -14,8 +14,9 @@ using Xunit;
 namespace SchoolAPI.Tests
 {
     public class CoursesControllerTests
-    {
+    { 
         private readonly CoursesController _sut;
+        private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
         private readonly Mock<ICourseRepository> _courseRepoMock = new();
         private readonly Mock<ISubjectRepository> _subjectRepoMock = new();
         private readonly Mock<ITeacherRepository> _teacherRepoMock = new();

@@ -18,13 +18,17 @@ namespace SchoolAPI.Controllers
             _unitOfWork = unitOfWork;
             _logger = logger;
             _mapper = mapper;
+
         }
 
         [HttpGet]
         public async Task<IEnumerable<SubjectDto>> GetSubjectsAsync()
         {
+
             var subjects = _mapper.Map<IEnumerable<Subject>, IEnumerable<SubjectDto>>(await _unitOfWork.Subject.GetAllAsync());
                             //.Select(subject => subject.AsDto());
+                subjects = (await _unitOfWork.Subject.GetAllAsync())
+                            .Select(subject => subject.AsDto());
             return subjects;
 
         }

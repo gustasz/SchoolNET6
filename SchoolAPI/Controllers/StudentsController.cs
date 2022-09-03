@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using SchoolAPI.Data;
 using SchoolAPI.Data.Interfaces;
 using SchoolAPI.Models;
@@ -18,15 +19,18 @@ namespace SchoolAPI.Controllers
             _unitOfWork = unitOfWork;
             _logger = logger;
             _mapper = mapper;
+
         }
 
         [HttpGet]
         public async Task<IEnumerable<StudentDto>> GetStudentsAsync()
         {
-            var students = (await _unitOfWork.Student.GetAllAsync())
+
+                students = (await _unitOfWork.Student.GetAllAsync())
                             .Select(student => student.AsDto());
                             //.ProjectTo<StudentDto>(_mapper.ConfigurationProvider);
             return students;
+
 
         }
 
