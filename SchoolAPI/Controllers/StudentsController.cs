@@ -1,3 +1,4 @@
+﻿using AutoMapper;
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using SchoolAPI.Data;
@@ -12,28 +13,25 @@ namespace SchoolAPI.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<StudentsController> _logger;
-        private readonly IMemoryCache _memoryCache;
-        public StudentsController(IUnitOfWork unitOfWork, ILogger<StudentsController> logger, IMemoryCache memoryCache)
+        private readonly IMapper _mapper;
+        public StudentsController(IUnitOfWork unitOfWork, ILogger<StudentsController> logger, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
-            _memoryCache = memoryCache;
+            _mapper = mapper;
+
         }
 
         [HttpGet]
         public async Task<IEnumerable<StudentDto>> GetStudentsAsync()
         {
-            if (!_memoryCache.TryGetValue(CacheKeys.Students, out IEnumerable<StudentDto> students))
-            {
+
                 students = (await _unitOfWork.Student.GetAllAsync())
                             .Select(student => student.AsDto());
-
-                var cacheEntryOptions = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromSeconds(60));
-
-                _memoryCache.Set(CacheKeys.Students, students, cacheEntryOptions);
-            }
+                            //.ProjectTo<StudentDto>(_mapper.ConfigurationProvider);
             return students;
+
+
         }
 
         [HttpGet("{id}")]

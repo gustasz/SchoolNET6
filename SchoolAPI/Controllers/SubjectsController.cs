@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using SchoolAPI.Data;
 using SchoolAPI.Data.Interfaces;
 using SchoolAPI.Models;
@@ -12,27 +12,23 @@ namespace SchoolAPI.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<SubjectsController> _logger;
-        private readonly IMemoryCache _memoryCache;
-        public SubjectsController(IUnitOfWork unitOfWork, ILogger<SubjectsController> logger, IMemoryCache memoryCache)
+        private readonly IMapper _mapper;
+        public SubjectsController(IUnitOfWork unitOfWork, ILogger<SubjectsController> logger, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
-            _memoryCache = memoryCache;
+            _mapper = mapper;
+
         }
 
         [HttpGet]
         public async Task<IEnumerable<SubjectDto>> GetSubjectsAsync()
         {
-            if (!_memoryCache.TryGetValue(CacheKeys.Subjects, out IEnumerable<SubjectDto> subjects))
-            {
+
+            var subjects = _mapper.Map<IEnumerable<Subject>, IEnumerable<SubjectDto>>(await _unitOfWork.Subject.GetAllAsync());
+                            //.Select(subject => subject.AsDto());
                 subjects = (await _unitOfWork.Subject.GetAllAsync())
                             .Select(subject => subject.AsDto());
-
-                var cacheEntryOptions = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromSeconds(60));
-
-                _memoryCache.Set(CacheKeys.Subjects, subjects, cacheEntryOptions);
-            }
             return subjects;
 
         }
@@ -48,7 +44,7 @@ namespace SchoolAPI.Controllers
                 return NotFound();
             }
 
-            return subject.AsDto();
+            return _mapper.Map<Subject, SubjectDto>(subject);
         }
 
         [HttpPost]
@@ -62,7 +58,7 @@ namespace SchoolAPI.Controllers
             var item = await _unitOfWork.Subject.AddAsync(subject);
             await _unitOfWork.CompleteAsync();
 
-            return CreatedAtAction("GetSubject", new { id = item.Id }, item.AsDto());
+            return CreatedAtAction("GetSubject", new { id = item.Id }, _mapper.Map<Subject, SubjectDto>(item));
         }
 
         [HttpPut("{id}")]
